@@ -18,7 +18,7 @@ int main(int argc, char *argv[])
 	MPI_Get_processor_name(hostname,&hostname_len);
 
 	/***********        Parameter    ************/
-	int B = 256; //Minibatch size.
+	int B = 32; //Minibatch size.
 	int S = 4; //Number of Segment in pipeline mode.
 	int Pr = 2; //Number of row 
 	int Pc = size/Pr; // Number of column
@@ -85,10 +85,11 @@ int main(int argc, char *argv[])
 		totalWeight+= nw[i][1];
 		if (rank == 0) {
 			printf("Layer %d [%f,%f,%.1f]\n",i,nw[i][0],nw[i][1],nw[i][2]);
-			printf("Total weight %f bytes\n", totalWeight*4);
 		}
 	}
-	
+	if (rank == 0) {
+		printf("Total weight %f bytes\n", totalWeight*4);
+	}
 	double *local_grad = malloc(sizeof(double) * totalWeight);
 	double *global_grad = malloc(sizeof(double) * totalWeight);
 	

@@ -18,7 +18,7 @@ int main(int argc, char *argv[])
 	MPI_Get_processor_name(hostname,&hostname_len);
 
 	/***********        Parameter    ************/
-	int B = 256; //Minibatch size.
+	int B = 32; //Minibatch size.
 	int S = 4; //Number of Segment in pipeline mode.
 	int Pr = 2; //Number of row 
 	int Pc = size/Pr; // Number of column
@@ -90,14 +90,16 @@ int main(int argc, char *argv[])
 		}
 		if (rank == 0) {
 			printf("Layer %d [%f,%f,%.1f]\n",i,nw[i][0],nw[i][1],nw[i][2]);
-			//printf("Max weight %f bytes\n", maxWeight*4);
-			printf("Max activation %f bytes\n", maxActivation*4);
 		}
+	}
+	if (rank == 0) {
+		//printf("Max weight %f bytes\n", maxWeight*4);
+		printf("Max activation %f bytes\n", maxActivation*4);
 	}
 	//double *local_grad = malloc(sizeof(double) * maxWeight);
 	//double *global_grad = malloc(sizeof(double) * maxWeight);
-	double *local_act = malloc(sizeof(double) * maxActivation);
-	double *global_act = malloc(sizeof(double) * maxActivation);
+	double *local_act = malloc(sizeof(double) * maxActivation*B);
+	double *global_act = malloc(sizeof(double) * maxActivation*B);
 	
 	MPI_Barrier(MPI_COMM_WORLD);
 	/****** Training ***********/
@@ -128,7 +130,7 @@ int main(int argc, char *argv[])
 					printf("Start Allgather layer %d\t%f\n",i,(end.tv_sec*1000000.0 + end.tv_usec -
 						start.tv_sec*1000000.0 - start.tv_usec) / 1000000.0);
 				}
-				MPI_Allgather(local_act, nw[i][0]/size, MPI_FLOAT, global_act, nw[i][0]/size, MPI_DOUBLE_PRECISION, MPI_COMM_WORLD);
+				MPI_Allgather(local_act, B*nw[i][0]/size, MPI_DOUBLE_PRECISION, global_act, B*nw[i][0]/size, MPI_DOUBLE_PRECISION, MPI_COMM_WORLD);
 			
 				if (rank == 0) {
 					gettimeofday(&end,NULL);
@@ -149,13 +151,20 @@ int main(int argc, char *argv[])
 			SMPI_SAMPLE_FLOPS(nw[i][2]*B/size) {}
 			//Gradient calculation
 			SMPI_SAMPLE_FLOPS(nw[i][1]/size) {}
+			if (rank == 0) {
+				gettimeofday(&end,NULL);
+				printf("End BW layer %d\t%f\n",i, (end.tv_sec*1000000.0 + end.tv_usec -
+					start.tv_sec*1000000.0 - start.tv_usec) / 1000000.0);  
+			}
+			
 			
 			if(i > 0){
 				if (rank == 0) {
+					gettimeofday(&end,NULL);
 					printf("Start Allreduce layer %d\t%f\n",i,(end.tv_sec*1000000.0 + end.tv_usec -
 						start.tv_sec*1000000.0 - start.tv_usec) / 1000000.0);
 				}
-				MPI_Allreduce(local_act, global_act, nw[i-1][0], MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD);
+				MPI_Allreduce(local_act, global_act, B*nw[i-1][0], MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD);
 				if (rank == 0) {
 					gettimeofday(&end,NULL);
 					printf("End Allreduce layer %d\t%f\n",i,(end.tv_sec*1000000.0 + end.tv_usec -
