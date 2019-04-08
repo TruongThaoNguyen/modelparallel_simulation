@@ -122,6 +122,11 @@ int main(int argc, char *argv[])
 		for (i = L-1; i >= 0; i--){
 			SMPI_SAMPLE_FLOPS(nw[i][2]*mB) {}
 		}
+		//Gradient calculation
+		for (i = 0; i < L; i++){
+			SMPI_SAMPLE_FLOPS(nw[i][1]) {}
+		}
+		
 		if (rank == 0) {
 			gettimeofday(&end,NULL);
 			printf("End BW\t%f\n",(end.tv_sec*1000000.0 + end.tv_usec -
@@ -130,10 +135,6 @@ int main(int argc, char *argv[])
 				start.tv_sec*1000000.0 - start.tv_usec) / 1000000.0);  				
 		}
 		
-		//Gradient calculation
-		for (i = 0; i < L; i++){
-			SMPI_SAMPLE_FLOPS(nw[i][1]) {}
-		}
 		//Weight update: Allredue operation to share the gradient update
 		MPI_Allreduce(local_grad, global_grad, totalWeight, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD);
 		if (rank == 0) {

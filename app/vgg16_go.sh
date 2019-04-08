@@ -1,4 +1,5 @@
-SIMGRID="/home/nguyen_truong/optelectric_simulate/SimGrid-3.21/build/bin/smpirun"
+#SIMGRID="/home/nguyen_truong/optelectric_simulate/SimGrid-3.21/build/bin/smpirun"
+SIMGRID="/home/nguyen/ai/optelectric_simulate/SimGrid-3.21/build/bin/smpirun"
 PLATFORM="../platforms/Tsubame3_64.xml"
 HOSTFILE="../platforms/Tsubame3_64.txt"
 LOG_DIR="./"
@@ -19,6 +20,12 @@ ${SIMGRID} -np ${SIZE} -map -platform ${PLATFORM} -hostfile ${HOSTFILE} ${CONFIG
 SIZE=8
 LOG_FILE="${LOG_DIR}/vgg16_d_${SIZE}.log"
 ${SIMGRID} -np ${SIZE} -map -platform ${PLATFORM} -hostfile ${HOSTFILE} ${CONFIG} VGG16_d.run >> ${LOG_FILE} 2>&1 &
+
+#hModel parallelism
+make vgg16_h
+SIZE=4
+LOG_FILE="${LOG_DIR}/vgg16_h_${SIZE}.log"
+${SIMGRID} -np ${SIZE} -map -platform ${PLATFORM} -hostfile ${HOSTFILE} ${CONFIG} VGG16_h.run >> ${LOG_FILE} 2>&1 &
 
 
 #grep "Simulated time" *.log

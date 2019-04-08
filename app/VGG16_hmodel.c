@@ -79,11 +79,25 @@ int main(int argc, char *argv[])
 		{1*1*1000 ,4096*1000,4096*1000}
 	};
 	int L = 21; // Number of Layer
-	if (rank == 0) {
-		for (i = 0; i < L; i++){
+	//double maxWeight = 0;
+	double maxActivation = 0;
+	for (i = 0; i < L; i++){
+/* 		if (maxWeight < nw[i][1]){
+			maxWeight = nw[i][1];
+		} */
+		if (maxActivation < nw[i][0]){
+			maxActivation = nw[i][0];
+		}
+		if (rank == 0) {
 			printf("Layer %d [%f,%f,%.1f]\n",i,nw[i][0],nw[i][1],nw[i][2]);
+			//printf("Max weight %f bytes\n", maxWeight*4);
+			printf("Max activation %f bytes\n", maxActivation*4);
 		}
 	}
+	//double *local_grad = malloc(sizeof(double) * maxWeight);
+	//double *global_grad = malloc(sizeof(double) * maxWeight);
+	double *local_act = malloc(sizeof(double) * maxActivation);
+	double *global_act = malloc(sizeof(double) * maxActivation);
 	
 	MPI_Barrier(MPI_COMM_WORLD);
 	/****** Training ***********/
@@ -96,35 +110,60 @@ int main(int argc, char *argv[])
 	int iter;
 	for (iter = 0; iter < I*E; iter++){
 		// FW computation
-		if (rank == 0) {
-			gettimeofday(&end,NULL);
-			printf("Start FW\t%f\n",(end.tv_sec*1000000.0 + end.tv_usec -
-				start.tv_sec*1000000.0 - start.tv_usec) / 1000000.0);  
-		}
 		for (i = 0; i < L; i++){
-			SMPI_SAMPLE_FLOPS(nw[i][2]*B) {}
+			if (rank == 0) {
+				gettimeofday(&end,NULL);
+				printf("Start FW layer %d\t%f\n",i,(end.tv_sec*1000000.0 + end.tv_usec -
+					start.tv_sec*1000000.0 - start.tv_usec) / 1000000.0);  
+			}
+			SMPI_SAMPLE_FLOPS(nw[i][2]*B/size) {}
+			if (rank == 0) {
+				gettimeofday(&end,NULL);
+				printf("End FW layer %d\t%f\n",i,(end.tv_sec*1000000.0 + end.tv_usec -
+					start.tv_sec*1000000.0 - start.tv_usec) / 1000000.0); 
+			}
+			
+			if(i < L-1){
+				if (rank == 0) {
+					printf("Start Allgather layer %d\t%f\n",i,(end.tv_sec*1000000.0 + end.tv_usec -
+						start.tv_sec*1000000.0 - start.tv_usec) / 1000000.0);
+				}
+				MPI_Allgather(local_act, nw[i][0]/size, MPI_FLOAT, global_act, nw[i][0]/size, MPI_DOUBLE_PRECISION, MPI_COMM_WORLD);
+			
+				if (rank == 0) {
+					gettimeofday(&end,NULL);
+					printf("End Allgather layer %d\t%f\n",i,(end.tv_sec*1000000.0 + end.tv_usec -
+						start.tv_sec*1000000.0 - start.tv_usec) / 1000000.0);
+				}
+			}
 		}
-		if (rank == 0) {
-			gettimeofday(&end,NULL);
-			printf("End FW\t%f\n",(end.tv_sec*1000000.0 + end.tv_usec -
-				start.tv_sec*1000000.0 - start.tv_usec) / 1000000.0); 
-			printf("Start BW\t%f\n",(end.tv_sec*1000000.0 + end.tv_usec -
-				start.tv_sec*1000000.0 - start.tv_usec) / 1000000.0);  
-		}
+		
 		// BW computation
 		for (i = L-1; i >= 0; i--){
-			SMPI_SAMPLE_FLOPS(nw[i][2]*B) {}
+			if (rank == 0) {
+				gettimeofday(&end,NULL);
+				printf("Start BW layer %d\t%f\n",i, (end.tv_sec*1000000.0 + end.tv_usec -
+					start.tv_sec*1000000.0 - start.tv_usec) / 1000000.0);  
+			}
+			
+			SMPI_SAMPLE_FLOPS(nw[i][2]*B/size) {}
+			//Gradient calculation
+			SMPI_SAMPLE_FLOPS(nw[i][1]/size) {}
+			
+			if(i > 0){
+				if (rank == 0) {
+					printf("Start Allreduce layer %d\t%f\n",i,(end.tv_sec*1000000.0 + end.tv_usec -
+						start.tv_sec*1000000.0 - start.tv_usec) / 1000000.0);
+				}
+				MPI_Allreduce(local_act, global_act, nw[i-1][0], MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD);
+				if (rank == 0) {
+					gettimeofday(&end,NULL);
+					printf("End Allreduce layer %d\t%f\n",i,(end.tv_sec*1000000.0 + end.tv_usec -
+						start.tv_sec*1000000.0 - start.tv_usec) / 1000000.0);
+				}
+			}
+			
 		}
-		//Gradient calculation
-		for (i = 0; i < L; i++){
-			SMPI_SAMPLE_FLOPS(nw[i][1]) {}
-		}
-		if (rank == 0) {
-			gettimeofday(&end,NULL);
-			printf("End BW\t%f\n",(end.tv_sec*1000000.0 + end.tv_usec -
-				start.tv_sec*1000000.0 - start.tv_usec) / 1000000.0);  
-		}
-		//Weight update: Do nothing 
 	}
 
 	MPI_Barrier(MPI_COMM_WORLD);
