@@ -18,12 +18,12 @@ int main(int argc, char *argv[])
 	MPI_Get_processor_name(hostname,&hostname_len);
 
 	/***********        Parameter    ************/
-	int B = 32; //Minibatch size.
-	int S = 4; //Number of Segment in pipeline mode.
+	int B = 64; //Minibatch size.
+	int S = 2; //Number of Segment in pipeline mode.
 	int Pr = 2; //Number of row 
 	int Pc = size/Pr; // Number of column
 	int Si = 2; // Number of segment in pipieline mode for iModel.
-	int I = 1; //Number of Iteration per epoch
+	int I =  2048/B; //1280000/B; //Number of Iteration per epoch
 	int E = 1; //Number of epoch;
 	/******* Neural Model Declaration ***********/
 	/* VGG16 Deep Neural Network for the sample (image) size 244x244x3 
