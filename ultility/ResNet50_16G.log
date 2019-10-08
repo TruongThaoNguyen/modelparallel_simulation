@@ -59,27 +59,35 @@ Total comp: 7426442368.0items
 Max Activation802816.0items
 ==========SINGLE-NODE===============
 maxBatchPerNode: 211.048353166
+mem4Sample248282432.0
 ==========DATA PARALLELISM==========
 maxBatchPerNode: 211.048353166
+mem4Sample248282432.0
 ==========hMODEL PARALLELISM==========
 maxBatchPerNode: 213.323080002
+mem4Sample77698592.0
 ==========hhMODEL PARALLELISM==========
 maxBatchPerNode: 213.323080002
 ==========vMODEL PARALLELISM==========
 Considering nodeNumber: 2
 maxBatchPerNode: 256.0
+mem4Sample175100032.0
 lastActivation: 50176.0
 Considering nodeNumber: 4
 maxBatchPerNode: 256.0
+mem4Sample127316096.0
 lastActivation: 351232.0
 Considering nodeNumber: 8
 maxBatchPerNode: 256.0
+mem4Sample110194816.0
 lastActivation: 577024.0
 Considering nodeNumber: 16
 maxBatchPerNode: 256.0
+mem4Sample73339008.0
 lastActivation: 1354752.0
 Considering nodeNumber: 32
 maxBatchPerNode: 256.0
+mem4Sample54263936.0
 lastActivation: 3512320.0
 name	B	p	Mem (bytes)	Tcomp (s)	Tcomm(s)	Time(s)	Cost(min*Node)
 single	128.0	1	9772128256.0	1022.13400334	0	1022.13400334	18.0

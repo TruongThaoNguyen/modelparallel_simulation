@@ -1,0 +1,154 @@
+[rank 0] -> n0
+[0.000000] [xbt_cfg/INFO] Configuration change: Set 'smpi/privatization' to '1'
+[0.000000] [xbt_cfg/INFO] Configuration change: Set 'surf/precision' to '1e-9'
+[0.000000] [xbt_cfg/INFO] Configuration change: Set 'network/model' to 'SMPI'
+[0.000000] [xbt_cfg/INFO] Configuration change: Set 'exception/cutpath' to '1'
+[0.000000] [xbt_cfg/INFO] Configuration change: Set 'smpi/display-timing' to '1'
+[0.000000] [xbt_cfg/INFO] Configuration change: Set 'smpi/allreduce' to 'lr'
+[0.000000] [xbt_cfg/INFO] Configuration change: Set 'contexts/nthreads' to '1'
+[0.000000] [xbt_cfg/INFO] Configuration change: Set 'cpu/optim' to 'Lazy'
+[0.000000] [xbt_cfg/INFO] Configuration change: Set 'maxmin/precision' to '1e-4'
+[0.000000] [surf_parse/INFO] The custom configuration 'network/model' is already defined by user!
+[0.000000] [xbt_cfg/INFO] Configuration change: Set 'network/optim' to 'Lazy'
+[0.000000] [xbt_cfg/INFO] Configuration change: Set 'smpi/cpu-threshold' to '0.00000000001'
+[0.000000] [surf_parse/INFO] The custom configuration 'smpi/display-timing' is already defined by user!
+[0.000000] [xbt_cfg/INFO] Configuration change: Set 'smpi/host-speed' to '50000000000.0'
+[0.000000] [smpi_coll/INFO] Switch to algorithm lr for collective allreduce
+[7.198783] [smpi_kernel/INFO] Simulated time: 7.19878 seconds. 
+
+The simulation took 0.0114643 seconds (after parsing and platform setup)
+0.0732442 seconds were actual computation of the application
+[7.198783] [smpi_kernel/INFO] More than 75% of the time was spent inside the application code.
+You may want to use sampling functions or trace replay to reduce this.
+Layer 0 [3211264.000000,1728.000000,86704128.0]
+Layer 1 [3211264.000000,36864.000000,1849688064.0]
+Layer 2 [802816.000000,0.000000,205520896.0]
+Layer 3 [1605632.000000,73728.000000,924844032.0]
+Layer 4 [1605632.000000,147456.000000,1849688064.0]
+Layer 5 [401408.000000,0.000000,205520896.0]
+Layer 6 [802816.000000,294912.000000,924844032.0]
+Layer 7 [802816.000000,589824.000000,1849688064.0]
+Layer 8 [802816.000000,589824.000000,1849688064.0]
+Layer 9 [200704.000000,0.000000,205520896.0]
+Layer 10 [401408.000000,1179648.000000,924844032.0]
+Layer 11 [401408.000000,2359296.000000,1849688064.0]
+Layer 12 [401408.000000,2359296.000000,1849688064.0]
+Layer 13 [100352.000000,0.000000,205520896.0]
+Layer 14 [100352.000000,2359296.000000,462422016.0]
+Layer 15 [100352.000000,2359296.000000,462422016.0]
+Layer 16 [100352.000000,2359296.000000,462422016.0]
+Layer 17 [25088.000000,0.000000,51380224.0]
+Layer 18 [4096.000000,102760448.000000,102760448.0]
+Layer 19 [4096.000000,16777216.000000,16777216.0]
+Layer 20 [1000.000000,4096000.000000,4096000.0]
+Start training	0.000001
+Start FW	0.000001
+End FW	0.449894
+Start BW	0.449894
+End BW	0.899802
+Start FW	0.899802
+End FW	1.349694
+Start BW	1.349694
+End BW	1.799601
+Start FW	1.799602
+End FW	2.249494
+Start BW	2.249494
+End BW	2.699401
+Start FW	2.699401
+End FW	3.149293
+Start BW	3.149293
+End BW	3.599201
+Start FW	3.599201
+End FW	4.049093
+Start BW	4.049093
+End BW	4.499001
+Start FW	4.499001
+End FW	4.948893
+Start BW	4.948893
+End BW	5.398801
+Start FW	5.398801
+End FW	5.848693
+Start BW	5.848693
+End BW	6.298600
+Start FW	6.298600
+End FW	6.748493
+Start BW	6.748493
+End BW	7.198400
+End training	 7.198400
+[rank 0] -> n0
+[0.000000] [xbt_cfg/INFO] Configuration change: Set 'smpi/privatization' to '1'
+[0.000000] [xbt_cfg/INFO] Configuration change: Set 'surf/precision' to '1e-9'
+[0.000000] [xbt_cfg/INFO] Configuration change: Set 'network/model' to 'SMPI'
+[0.000000] [xbt_cfg/INFO] Configuration change: Set 'exception/cutpath' to '1'
+[0.000000] [xbt_cfg/INFO] Configuration change: Set 'smpi/display-timing' to '1'
+[0.000000] [xbt_cfg/INFO] Configuration change: Set 'smpi/allreduce' to 'lr'
+[0.000000] [xbt_cfg/INFO] Configuration change: Set 'contexts/nthreads' to '1'
+[0.000000] [xbt_cfg/INFO] Configuration change: Set 'cpu/optim' to 'Lazy'
+[0.000000] [xbt_cfg/INFO] Configuration change: Set 'maxmin/precision' to '1e-4'
+[0.000000] [surf_parse/INFO] The custom configuration 'network/model' is already defined by user!
+[0.000000] [xbt_cfg/INFO] Configuration change: Set 'network/optim' to 'Lazy'
+[0.000000] [xbt_cfg/INFO] Configuration change: Set 'smpi/cpu-threshold' to '0.00000000001'
+[0.000000] [surf_parse/INFO] The custom configuration 'smpi/display-timing' is already defined by user!
+[0.000000] [xbt_cfg/INFO] Configuration change: Set 'smpi/host-speed' to '50000000000.0'
+[0.000000] [smpi_coll/INFO] Switch to algorithm lr for collective allreduce
+[7.198835] [smpi_kernel/INFO] Simulated time: 7.19884 seconds. 
+
+The simulation took 0.011677 seconds (after parsing and platform setup)
+0.0829665 seconds were actual computation of the application
+[7.198835] [smpi_kernel/INFO] More than 75% of the time was spent inside the application code.
+You may want to use sampling functions or trace replay to reduce this.
+Layer 0 [3211264.000000,1728.000000,86704128.0]
+Layer 1 [3211264.000000,36864.000000,1849688064.0]
+Layer 2 [802816.000000,0.000000,205520896.0]
+Layer 3 [1605632.000000,73728.000000,924844032.0]
+Layer 4 [1605632.000000,147456.000000,1849688064.0]
+Layer 5 [401408.000000,0.000000,205520896.0]
+Layer 6 [802816.000000,294912.000000,924844032.0]
+Layer 7 [802816.000000,589824.000000,1849688064.0]
+Layer 8 [802816.000000,589824.000000,1849688064.0]
+Layer 9 [200704.000000,0.000000,205520896.0]
+Layer 10 [401408.000000,1179648.000000,924844032.0]
+Layer 11 [401408.000000,2359296.000000,1849688064.0]
+Layer 12 [401408.000000,2359296.000000,1849688064.0]
+Layer 13 [100352.000000,0.000000,205520896.0]
+Layer 14 [100352.000000,2359296.000000,462422016.0]
+Layer 15 [100352.000000,2359296.000000,462422016.0]
+Layer 16 [100352.000000,2359296.000000,462422016.0]
+Layer 17 [25088.000000,0.000000,51380224.0]
+Layer 18 [4096.000000,102760448.000000,102760448.0]
+Layer 19 [4096.000000,16777216.000000,16777216.0]
+Layer 20 [1000.000000,4096000.000000,4096000.0]
+Start training	0.000001
+Start FW	0.000001
+End FW	0.449893
+Start BW	0.449893
+End BW	0.899801
+Start FW	0.899801
+End FW	1.349693
+Start BW	1.349693
+End BW	1.799600
+Start FW	1.799600
+End FW	2.249492
+Start BW	2.249492
+End BW	2.699400
+Start FW	2.699400
+End FW	3.149292
+Start BW	3.149292
+End BW	3.599199
+Start FW	3.599199
+End FW	4.049092
+Start BW	4.049092
+End BW	4.498999
+Start FW	4.498999
+End FW	4.948891
+Start BW	4.948891
+End BW	5.398799
+Start FW	5.398799
+End FW	5.848691
+Start BW	5.848691
+End BW	6.298598
+Start FW	6.298598
+End FW	6.748490
+Start BW	6.748490
+End BW	7.198398
+End training	 7.198398

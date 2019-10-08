@@ -1,0 +1,95 @@
+[rank 0] -> n0
+[rank 1] -> n1
+[rank 2] -> n2
+[rank 3] -> n3
+[0.000000] [xbt_cfg/INFO] Configuration change: Set 'smpi/privatization' to '1'
+[0.000000] [xbt_cfg/INFO] Configuration change: Set 'surf/precision' to '1e-9'
+[0.000000] [xbt_cfg/INFO] Configuration change: Set 'network/model' to 'SMPI'
+[0.000000] [xbt_cfg/INFO] Configuration change: Set 'exception/cutpath' to '1'
+[0.000000] [xbt_cfg/INFO] Configuration change: Set 'smpi/display-timing' to '1'
+[0.000000] [xbt_cfg/INFO] Configuration change: Set 'smpi/allreduce' to 'lr'
+[0.000000] [xbt_cfg/INFO] Configuration change: Set 'contexts/nthreads' to '1'
+[0.000000] [xbt_cfg/INFO] Configuration change: Set 'cpu/optim' to 'Lazy'
+[0.000000] [xbt_cfg/INFO] Configuration change: Set 'maxmin/precision' to '1e-4'
+[0.000000] [surf_parse/INFO] The custom configuration 'network/model' is already defined by user!
+[0.000000] [xbt_cfg/INFO] Configuration change: Set 'network/optim' to 'Lazy'
+[0.000000] [xbt_cfg/INFO] Configuration change: Set 'smpi/cpu-threshold' to '0.00000000001'
+[0.000000] [surf_parse/INFO] The custom configuration 'smpi/display-timing' is already defined by user!
+[0.000000] [xbt_cfg/INFO] Configuration change: Set 'smpi/host-speed' to '50000000000.0'
+[0.000000] [smpi_coll/INFO] Switch to algorithm lr for collective allreduce
+[2.087703] [smpi_kernel/INFO] Simulated time: 2.0877 seconds. 
+
+The simulation took 27.9449 seconds (after parsing and platform setup)
+0.362383 seconds were actual computation of the application
+Layer 0 [3211264.000000,1728.000000,86704128.0]
+Layer 1 [3211264.000000,36864.000000,1849688064.0]
+Layer 2 [802816.000000,0.000000,205520896.0]
+Layer 3 [1605632.000000,73728.000000,924844032.0]
+Layer 4 [1605632.000000,147456.000000,1849688064.0]
+Layer 5 [401408.000000,0.000000,205520896.0]
+Layer 6 [802816.000000,294912.000000,924844032.0]
+Layer 7 [802816.000000,589824.000000,1849688064.0]
+Layer 8 [802816.000000,589824.000000,1849688064.0]
+Layer 9 [200704.000000,0.000000,205520896.0]
+Layer 10 [401408.000000,1179648.000000,924844032.0]
+Layer 11 [401408.000000,2359296.000000,1849688064.0]
+Layer 12 [401408.000000,2359296.000000,1849688064.0]
+Layer 13 [100352.000000,0.000000,205520896.0]
+Layer 14 [100352.000000,2359296.000000,462422016.0]
+Layer 15 [100352.000000,2359296.000000,462422016.0]
+Layer 16 [100352.000000,2359296.000000,462422016.0]
+Layer 17 [25088.000000,0.000000,51380224.0]
+Layer 18 [4096.000000,102760448.000000,102760448.0]
+Layer 19 [4096.000000,16777216.000000,16777216.0]
+Layer 20 [1000.000000,4096000.000000,4096000.0]
+Total weight 553376512.000000 bytes
+Start training	0.000001
+Start FW	0.000001
+End FW	0.112475
+Start BW	0.112475
+End BW	0.224965
+Start Weight update	0.224965
+End Weight update	0.260906
+Start FW	0.260907
+End FW	0.373380
+Start BW	0.373380
+End BW	0.485870
+Start Weight update	0.485870
+End Weight update	0.521812
+Start FW	0.521812
+End FW	0.634285
+Start BW	0.634285
+End BW	0.746776
+Start Weight update	0.746776
+End Weight update	0.782717
+Start FW	0.782717
+End FW	0.895191
+Start BW	0.895191
+End BW	1.007681
+Start Weight update	1.007681
+End Weight update	1.043622
+Start FW	1.043622
+End FW	1.156096
+Start BW	1.156096
+End BW	1.268586
+Start Weight update	1.268586
+End Weight update	1.304527
+Start FW	1.304528
+End FW	1.417001
+Start BW	1.417001
+End BW	1.529491
+Start Weight update	1.529491
+End Weight update	1.565432
+Start FW	1.565432
+End FW	1.677906
+Start BW	1.677906
+End BW	1.790396
+Start Weight update	1.790396
+End Weight update	1.826337
+Start FW	1.826337
+End FW	1.938811
+Start BW	1.938811
+End BW	2.051301
+Start Weight update	2.051301
+End Weight update	2.087242
+End training	2.087243

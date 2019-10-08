@@ -38,8 +38,8 @@ def main():
 	#if (MAX_NODE == 0) or (MAX_NODE is None):
 		# MAX_NODE = TOTAL_SAMPLE/MAX_MINIBATCH #5000
 	
-	MEM_PER_NODE = 4e9 #16 GB for Nvidia V100
-	NODE_SPEED = 9.3e12 # flop for NVIDIA Tesla P100
+	MEM_PER_NODE = 8e9 #16 GB for Nvidia V100
+	NODE_SPEED = 9.3e12 # flop for NVIDIA Tesla P100 or 15.7Tflops
 	LINK_BW = 12.5E9 # Bype per second
 	BW_FACTOR = 1/LINK_BW
 	LATENCY_FACTOR = 500E-9 #second. 5 hops of 100ns switch latency
@@ -71,10 +71,14 @@ def main():
 	results=[]
 	print "==========SINGLE-NODE==============="
 	maxBatchPerNode = (ITEM_PER_NODE - 2*totalWeight)/(network['in'] + 2*totalActivation)
-	if maxBatchPerNode < 0:
+	if maxBatchPerNode < 1:
 		print "Not enough memory to store model"
+		mem4Sample = ((network['in'] + 2*totalActivation) + 2*totalWeight)*BYTE_PER_ITEM
+		print "mem4Sample" + str(mem4Sample)
 	else:
 		print "maxBatchPerNode: " + str(maxBatchPerNode)
+		mem4Sample = ((network['in'] + 2*totalActivation) + 2*totalWeight)*BYTE_PER_ITEM
+		print "mem4Sample" + str(mem4Sample)
 		miniBatch = math.pow(2,int(math.log(maxBatchPerNode,2)))
 		memPerNode = BYTE_PER_ITEM*(miniBatch*(network['in'] + 2*totalActivation) + 2*totalWeight) #bytes
 		Tcomp = TOTAL_SAMPLE*(totalComp/NODE_SPEED)
@@ -86,10 +90,14 @@ def main():
 	#3.1 Analysis Data parallelism
 	print "==========DATA PARALLELISM=========="
 	maxBatchPerNode = (ITEM_PER_NODE - 2*totalWeight)/(network['in'] + 2*totalActivation)
-	if maxBatchPerNode < 0:
+	if maxBatchPerNode < 1:
 		print "Not enough memory to store model"
+		mem4Sample = ((network['in'] + 2*totalActivation) + 2*totalWeight)*BYTE_PER_ITEM
+		print "mem4Sample" + str(mem4Sample)
 	else:
 		print "maxBatchPerNode: " + str(maxBatchPerNode)
+		mem4Sample = ((network['in'] + 2*totalActivation) + 2*totalWeight)*BYTE_PER_ITEM
+		print "mem4Sample" + str(mem4Sample)
 		#print "maxNode:" + str(maxNode)
 		
 		maxIdx = int(math.log(maxBatchPerNode,2))
@@ -111,10 +119,14 @@ def main():
 	
 	MAX_NODE = MAX_CHANNEL
 	maxBatchPerNode = (ITEM_PER_NODE - 2*totalWeight/MAX_NODE)/(network['in'] + 2*totalActivation)
-	if maxBatchPerNode < 0:
+	if maxBatchPerNode < 1:
 		print "Not enough memory to store model"
+		mem4Sample = ((network['in'] + 2*totalActivation) + 2*totalWeight/MAX_NODE)*BYTE_PER_ITEM
+		print "mem4Sample" + str(mem4Sample)
 	else:
 		print "maxBatchPerNode: " + str(maxBatchPerNode)
+		mem4Sample = ((network['in'] + 2*totalActivation) + 2*totalWeight/MAX_NODE)*BYTE_PER_ITEM
+		print "mem4Sample" + str(mem4Sample)
 		
 		maxIdx = int(math.log(maxBatchPerNode,2))
 		maxIndex = int(math.log(MAX_NODE,2))
@@ -137,8 +149,10 @@ def main():
 	Tcomm = 0
 	MAX_NODE = MAX_CHANNEL
 	maxBatchPerNode = (ITEM_PER_NODE - 2*totalWeight/MAX_NODE)/(network['in'] + 2*totalActivation)
-	if maxBatchPerNode < 0:
+	if maxBatchPerNode < 1:
 		print "Not enough memory to store model"
+		mem4Sample = ((network['in'] + 2*totalActivation) + 2*totalWeight/MAX_NODE)*BYTE_PER_ITEM
+		print "mem4Sample" + str(mem4Sample)
 	else:
 		print "maxBatchPerNode: " + str(maxBatchPerNode)
 		
@@ -232,10 +246,28 @@ def main():
 			if maxBatch < maxBatchPerNode:
 				maxBatchPerNode = maxBatch
 
-		if maxBatchPerNode < 0:
+		if maxBatchPerNode < 1:
 			print "Not enough memory to store model"
+			mem4Sample = 0
+			for i in range(0,nodeNumber):
+				if (i ==0):
+					nodeMem = BYTE_PER_ITEM*((1)*(nodeInput + 2*nodeTotalActivation[i]) + 2*nodeTotalWeight[i]) #bytes
+				else:
+					nodeMem = BYTE_PER_ITEM*((1)*(2*nodeInput + 2*nodeTotalActivation[i]) + 2*nodeTotalWeight[i]) #bytes
+				if (mem4Sample < nodeMem):
+					mem4Sample = nodeMem
+			print "mem4Sample" + str(mem4Sample)
 		else:	
 			print "maxBatchPerNode: " + str(maxBatchPerNode)
+			mem4Sample = 0
+			for i in range(0,nodeNumber):
+				if (i ==0):
+					nodeMem = BYTE_PER_ITEM*((1)*(nodeInput + 2*nodeTotalActivation[i]) + 2*nodeTotalWeight[i]) #bytes
+				else:
+					nodeMem = BYTE_PER_ITEM*((1)*(2*nodeInput + 2*nodeTotalActivation[i]) + 2*nodeTotalWeight[i]) #bytes
+				if (mem4Sample < nodeMem):
+					mem4Sample = nodeMem
+			print "mem4Sample" + str(mem4Sample)
 			maxIndex = int(math.log(maxBatchPerNode,2))
 			MAX_SEGMENT = nodeNumber
 			if (MAX_MINIBATCH/nodeNumber > maxBatchPerNode):
@@ -305,6 +337,7 @@ def load_network(networkFileName):
 		if len(splitLine) >= 3:
 			nw['lay'].append([float(splitLine[0]),float(splitLine[1]),float(splitLine[2])])
 		elif len(splitLine) == 1:
+			print splitLine[0]
 			nw['in'] = float(splitLine[0])
 		else:
 			print '[WARNING] Invalid format at line ' + str(lineIdx)			
@@ -766,6 +799,62 @@ def save_network(networkFileName):
 		[7*7*2048,1*1*512*2048,7*7*2048*1*1*512],
 		
 		[1*1*1000,0,1*1*1000*7*7*2048],
+		[1*1*1000,1000*1000,1000*1000]
+	]}
+	
+	#ResNet50 2Kx2K input
+	nw = {'in':2048*2048*3,'lay':[
+		[1024*1024*64,64*64*3*64,1024*1024*64*3*64*7],
+		[512*512*64,0,512*512*64*3*3*64],
+		[512*512*64,1*1*64*64,512*512*64*1*1*64],
+		[512*512*64,3*3*64*64,512*512*64*3*3*64],
+		[512*512*256,1*1*64*256,512*512*2512*1*1*64],
+		[512*512*64,1*1*64*64,512*512*64*1*1*256],
+		[512*512*64,3*3*64*64,512*512*64*3*3*64],
+		[512*512*256,1*1*64*256,512*512*2512*1*1*64],
+		[512*512*64,1*1*64*64,512*512*64*1*1*256],
+		[512*512*64,3*3*64*64,512*512*64*3*3*64],
+		[512*512*256,1*1*64*256,512*512*2512*1*1*64],
+		[256*256*128,1*1*2512*128,256*256*1256*1*1*256],
+		[256*256*128,3*3*1256*128,256*256*1256*3*3*128],
+		[256*256*512,1*1*1256*512,256*256*512*1*1*128],
+		[256*256*128,1*1*512*128,256*256*1256*1*1*512],
+		[256*256*128,3*3*1256*128,256*256*1256*3*3*128],
+		[256*256*512,1*1*1256*512,256*256*512*1*1*128],
+		[256*256*128,1*1*512*128,256*256*1256*1*1*512],
+		[256*256*128,3*3*1256*128,256*256*1256*3*3*128],
+		[256*256*512,1*1*1256*512,256*256*512*1*1*128],
+		[256*256*128,1*1*512*128,256*256*1256*1*1*512],
+		[256*256*128,3*3*1256*128,256*256*1256*3*3*128],
+		[256*256*512,1*1*1256*512,256*256*512*1*1*128],
+		[128*128*256,1*1*512*256,128*128*2512*1*1*512],
+		[128*128*256,3*3*2512*256,128*128*2512*3*3*256],
+		[128*128*1024,1*1*2512*1024,128*128*1024*1*1*256],
+		[128*128*256,1*1*1024*256,128*128*2512*1*1*1024],
+		[128*128*256,3*3*2512*256,128*128*2512*3*3*256],
+		[128*128*1024,1*1*2512*1024,128*128*1024*1*1*256],
+		[128*128*256,1*1*1024*256,128*128*2512*1*1*1024],
+		[128*128*256,3*3*2512*256,128*128*2512*3*3*256],
+		[128*128*1024,1*1*2512*1024,128*128*1024*1*1*256],
+		[128*128*256,1*1*1024*256,128*128*2512*1*1*1024],
+		[128*128*256,3*3*2512*256,128*128*2512*3*3*256],
+		[128*128*1024,1*1*2512*1024,128*128*1024*1*1*256],
+		[128*128*256,1*1*1024*256,128*128*2512*1*1*1024],
+		[128*128*256,3*3*2512*256,128*128*2512*3*3*256],
+		[128*128*1024,1*1*2512*1024,128*128*1024*1*1*256],
+		[128*128*256,1*1*1024*256,128*128*2512*1*1*1024],
+		[128*128*256,3*3*2512*256,128*128*2512*3*3*256],
+		[128*128*1024,1*1*2512*1024,128*128*1024*1*1*256],
+		[64*64*512,1*1*1024*512,64*64*512*1*1*1024],
+		[64*64*512,3*3*512*512,64*64*512*3*3*512],
+		[64*64*2048,1*1*512*2048,64*64*2048*1*1*512],
+		[64*64*512,1*1*2048*512,64*64*512*1*1*2048],
+		[64*64*512,3*3*512*512,64*64*512*3*3*512],
+		[64*64*2048,1*1*512*2048,64*64*2048*1*1*512],
+		[64*64*512,1*1*2048*512,64*64*512*1*1*2048],
+		[64*64*512,3*3*512*512,64*64*512*3*3*512],
+		[64*64*2048,1*1*512*2048,64*64*2048*1*1*512],
+		[1*1*1000,0,1*1*1000*64*64*2048],
 		[1*1*1000,1000*1000,1000*1000]
 	]}
 	# print 'Write dnn into ' + networkFileName

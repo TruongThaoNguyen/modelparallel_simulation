@@ -37,7 +37,7 @@ def main():
 	#if (MAX_COLUMN == 0) or (MAX_COLUMN is None):
 		# MAX_COLUMN = TOTAL_SAMPLE/MAX_MINIBATCH #5000
 	
-	MEM_PER_NODE = 4e9 #16 GB for Nvidia V100
+	MEM_PER_NODE = 8e9 #16 GB for Nvidia V100
 	NODE_SPEED = 9.3e12 # flop for NVIDIA Tesla P100
 	LINK_BW = 12.5E9 # Bype per second
 	BW_FACTOR = 1/LINK_BW
@@ -159,48 +159,70 @@ def main():
 				if maxBatch < maxBatchPerNode:
 					maxBatchPerNode = maxBatch
 
-			print "maxBatchPerNode: " + str(maxBatchPerNode)
-			maxIndex = int(math.log(maxBatchPerNode,2))
-			MAX_SEGMENT = colNumber
-			if (MAX_MINIBATCH/colNumber > maxBatchPerNode):
-				microBatch = math.pow(2,maxIndex)
-				if MAX_SEGMENT > MAX_MINIBATCH/microBatch:
-					MAX_SEGMENT = MAX_MINIBATCH/microBatch
-			else:
-				microBatch = MAX_MINIBATCH/colNumber
-				
-			
-			for seg in range(int(math.log(MAX_SEGMENT,2)),int(math.log(MAX_SEGMENT,2))+1):
-				Tcomp = 0
-				Tcomm = 0
-		
-				SEGMENT = int(math.pow(2,seg))
-				miniBatch = microBatch*SEGMENT
-				
-				maxMem = 0
-				lastActivation = 0
+			if maxBatchPerNode < 1:
+				print "Not enough memory to store model"
+				mem4Sample = 0
 				for i in range(0,colNumber):
 					if (i ==0):
-						nodeMem = BYTE_PER_ITEM*((microBatch)*(nodeInput + 2*nodeTotalActivation[i]) + 2*nodeTotalWeight2[i]) #bytes
+						nodeMem = BYTE_PER_ITEM*((1)*(nodeInput + 2*nodeTotalActivation[i]) + 2*nodeTotalWeight[i]) #bytes
 					else:
-						nodeMem = BYTE_PER_ITEM*((microBatch)*(2*nodeInput + 2*nodeTotalActivation[i]) + 2*nodeTotalWeight2[i]) #bytes
-					if (maxMem < nodeMem):
-						maxMem = nodeMem
-					if i < colNumber - 1:	
-						lastActivation = lastActivation + network['lay'][lastLayerIdx[i]][0]
-				lastActivation2 = lastActivation+  network['lay'][lastLayerIdx[colNumber-1]][0]
-				print "lastActivation: " + str(lastActivation)
-				Tcomp = (TOTAL_SAMPLE/SEGMENT)*(2*totalComp2/NODE_SPEED)
-				print totalComp, totalComp2
-				Tcomp = Tcomp + ((SEGMENT-1)*TOTAL_SAMPLE/SEGMENT)*(nodeTotalComp2[0]+nodeTotalComp2[colNumber-1])/(2*NODE_SPEED)		
+						nodeMem = BYTE_PER_ITEM*((1)*(2*nodeInput + 2*nodeTotalActivation[i]) + 2*nodeTotalWeight[i]) #bytes
+					if (mem4Sample < nodeMem):
+						mem4Sample = nodeMem
+				print "mem4Sample" + str(mem4Sample)
+			else:	
+				print "maxBatchPerNode: " + str(maxBatchPerNode)
+				mem4Sample = 0
+				for i in range(0,colNumber):
+					if (i ==0):
+						nodeMem = BYTE_PER_ITEM*((1)*(nodeInput + 2*nodeTotalActivation[i]) + 2*nodeTotalWeight[i]) #bytes
+					else:
+						nodeMem = BYTE_PER_ITEM*((1)*(2*nodeInput + 2*nodeTotalActivation[i]) + 2*nodeTotalWeight[i]) #bytes
+					if (mem4Sample < nodeMem):
+						mem4Sample = nodeMem
+				print "mem4Sample" + str(mem4Sample)
+			
+				maxIndex = int(math.log(maxBatchPerNode,2))
+				MAX_SEGMENT = colNumber
+				if (MAX_MINIBATCH/colNumber > maxBatchPerNode):
+					microBatch = math.pow(2,maxIndex)
+					if MAX_SEGMENT > MAX_MINIBATCH/microBatch:
+						MAX_SEGMENT = MAX_MINIBATCH/microBatch
+				else:
+					microBatch = MAX_MINIBATCH/colNumber
+					
 				
-				Tcomm = (TOTAL_SAMPLE/miniBatch)*2*((colNumber-1)*LATENCY_FACTOR + lastActivation*miniBatch*BYTE_PER_ITEM*BW_FACTOR/SEGMENT)
-				Tcomm = Tcomm + (3*TOTAL_SAMPLE/miniBatch)*(colNumber*math.log(rowNumber,2)*LATENCY_FACTOR + (rowNumber-1)*lastActivation2*miniBatch*BYTE_PER_ITEM*BW_FACTOR/(rowNumber*SEGMENT))
-				print (3*TOTAL_SAMPLE/miniBatch)*(colNumber*math.log(rowNumber,2)*LATENCY_FACTOR)
-				print (3*TOTAL_SAMPLE/miniBatch)*((rowNumber-1)*lastActivation2*miniBatch*BYTE_PER_ITEM*BW_FACTOR/(rowNumber*SEGMENT))
-				result = {'name':'imodel'+str(SEGMENT),'B':str(miniBatch) + "(" + str(int(microBatch)) +")",'p':rowNumber*colNumber,'mMem':maxMem,'Tcomp':Tcomp,'Tcomm':Tcomm,'p2': str(rowNumber) + "x" + str(colNumber)}
-				#str(miniBatch) + "(" + str(int(microBatch)) +")"
-				results.append(result)
+				for seg in range(int(math.log(MAX_SEGMENT,2)),int(math.log(MAX_SEGMENT,2))+1):
+					Tcomp = 0
+					Tcomm = 0
+			
+					SEGMENT = int(math.pow(2,seg))
+					miniBatch = microBatch*SEGMENT
+					
+					maxMem = 0
+					lastActivation = 0
+					for i in range(0,colNumber):
+						if (i ==0):
+							nodeMem = BYTE_PER_ITEM*((microBatch)*(nodeInput + 2*nodeTotalActivation[i]) + 2*nodeTotalWeight2[i]) #bytes
+						else:
+							nodeMem = BYTE_PER_ITEM*((microBatch)*(2*nodeInput + 2*nodeTotalActivation[i]) + 2*nodeTotalWeight2[i]) #bytes
+						if (maxMem < nodeMem):
+							maxMem = nodeMem
+						if i < colNumber - 1:	
+							lastActivation = lastActivation + network['lay'][lastLayerIdx[i]][0]
+					lastActivation2 = lastActivation+  network['lay'][lastLayerIdx[colNumber-1]][0]
+					print "lastActivation: " + str(lastActivation)
+					Tcomp = (TOTAL_SAMPLE/SEGMENT)*(2*totalComp2/NODE_SPEED)
+					print totalComp, totalComp2
+					Tcomp = Tcomp + ((SEGMENT-1)*TOTAL_SAMPLE/SEGMENT)*(nodeTotalComp2[0]+nodeTotalComp2[colNumber-1])/(2*NODE_SPEED)		
+					
+					Tcomm = (TOTAL_SAMPLE/miniBatch)*2*((colNumber-1)*LATENCY_FACTOR + lastActivation*miniBatch*BYTE_PER_ITEM*BW_FACTOR/SEGMENT)
+					Tcomm = Tcomm + (3*TOTAL_SAMPLE/miniBatch)*(colNumber*math.log(rowNumber,2)*LATENCY_FACTOR + (rowNumber-1)*lastActivation2*miniBatch*BYTE_PER_ITEM*BW_FACTOR/(rowNumber*SEGMENT))
+					print (3*TOTAL_SAMPLE/miniBatch)*(colNumber*math.log(rowNumber,2)*LATENCY_FACTOR)
+					print (3*TOTAL_SAMPLE/miniBatch)*((rowNumber-1)*lastActivation2*miniBatch*BYTE_PER_ITEM*BW_FACTOR/(rowNumber*SEGMENT))
+					result = {'name':'imodel'+str(SEGMENT),'B':str(miniBatch) + "(" + str(int(microBatch)) +")",'p':rowNumber*colNumber,'mMem':maxMem,'Tcomp':Tcomp,'Tcomm':Tcomm,'p2': str(rowNumber) + "x" + str(colNumber)}
+					#str(miniBatch) + "(" + str(int(microBatch)) +")"
+					results.append(result)
 				
 	#3.5 Analysis iModel
 	#print results
@@ -251,30 +273,46 @@ def print_network(nw):
 		print line
 	
 def save_network(networkFileName):
-	#VGG16
-	nw = {'in':244*244*3,'lay':[
-		[224*224*64 ,3*3*3*64 ,224*224*64*3*3*3],
-		[224*224*64 ,3*3*64*64 ,224*224*64*3*3*64],
-		[112*112*64 ,0 ,112*112*64*2*2*64],
-		[112*112*128 ,3*3*64*128 ,112*112*128*3*3*64],
-		[112*112*128 ,3*3*128*128,112*112*128*3*3*128],
-		[56*56*128 ,0,56*56*128*2*2*128],
-		[56*56*256 ,3*3*128*256,56*56*256*3*3*128],
-		[56*56*256 ,3*3*256*256,56*56*256*3*3*256],
-		[56*56*256 ,3*3*256*256,56*56*256*3*3*256],
-		[28*28*256 ,0,28*28*256*2*2*256],
-		[28*28*512 ,3*3*256*512,28*28*512*3*3*256],
-		[28*28*512 ,3*3*512*512,28*28*512*3*3*512],
-		[28*28*512 ,3*3*512*512,28*28*512*3*3*512],
-		[14*14*512 ,0,14*14*512*2*2*512],
-		[14*14*512 ,3*3*512*512,14*14*512*3*3*512],
-		[14*14*512 ,3*3*512*512,14*14*512*3*3*512],
-		[14*14*512 ,3*3*512*512,14*14*512*3*3*512],
-		[7*7*512,0,7*7*512*2*2*512],
-		[1*1*4096 ,7*7*512*4096,7*7*512*4096],
-		[1*1*4096 ,4096*4096,4096*4096],
-		[1*1*1000 ,4096*1000,4096*1000]
+	#CosmoFlow
+	nw = {'in':128*128*128*1,'lay':[
+		[126*126*126*16 ,3*3*3*1*16 ,126*126*126*16*1*3*3*3, "CONV1,3x3x3,1,16,126x126x126"],
+		[63*63*63*16 ,0 ,63*63*63*16*2*2*2*16, "POOL1,2x2x2,16,16,63x63x63"],
+		[60*60*60*32 ,4*4*4*16*32 ,60*60*60*32*16*4*4*4, "CONV2,4x4x4,16,32,60x60x60"],
+		[30*30*30*32 ,0 ,30*30*30*32*2*2*2*32, "POOL2,2x2x2,32,32,30x30x30"],
+		[27*27*27*64 ,4*4*4*32*64 ,27*27*27*64*32*4*4*4, "CONV3,4x4x4,32,16,27x27x27"],
+		[13*13*13*64 ,0 ,13*13*13*64*2*2*2*64, "POOL3,2x2x2,64,64,13x13x13"],
+		[6*6*6*128 ,3*3*3*64*128 ,6*6*6*128*64*3*3*3, "CONV4,3x3x3,128,64,6x6x6"],
+		[4*4*4*256 ,2*2*2*256*128 ,4*4*4*256*128*2*2*2, "CONV5,2x2x2,256,128,4x4x4"],
+		[3*3*3*256 ,2*2*2*256*256 ,3*3*3*256*256*2*2*2, "CONV6,2x2x2,256,256,3x3x3"],
+		[2*2*2*256 ,2*2*2*256*256 ,2*2*2*256*256*2*2*2, "CONV6,2x2x2,256,256,2x2x2"],
+		[1*1*2048 ,2*2*2*256*2048,2*2*2*256*2048,"FC1,1x1x2048"],
+		[1*1*256 ,2048*256,2048*256,"FC2,1x1x256"],
+		[1*1*3 ,256*3,256*3,"FC3,1x1x3"]
 	]}
+	# #VGG16
+	# nw = {'in':244*244*3,'lay':[
+		# [224*224*64 ,3*3*3*64 ,224*224*64*3*3*3, "CONV1,3x3,3,64,224x224"],
+		# [224*224*64 ,3*3*64*64 ,224*224*64*3*3*64, "CONV2,3x3,64,64,224x224"],
+		# [112*112*64 ,0 ,112*112*64*2*2*64, "POOL1,2x2,64,64,112x112"],
+		# [112*112*128 ,3*3*64*128 ,112*112*128*3*3*64,"CONV3,3x3,64,128,112x112"],
+		# [112*112*128 ,3*3*128*128,112*112*128*3*3*128,"CONV4,3x3,128,128,112x112"],
+		# [56*56*128 ,0,56*56*128*2*2*128,"POOL2,2x2,128,128,56x56"],
+		# [56*56*256 ,3*3*128*256,56*56*256*3*3*128,"CONV5,3x3,128,256,56x56"],
+		# [56*56*256 ,3*3*256*256,56*56*256*3*3*256,"CONV6,3x3,256,256,56x56"],
+		# [56*56*256 ,3*3*256*256,56*56*256*3*3*256,"CONV7,3x3,256,256,56x56"],
+		# [28*28*256 ,0,28*28*256*2*2*256,"POOL3,2x2,256,256,28x28"],
+		# [28*28*512 ,3*3*256*512,28*28*512*3*3*256,"CONV8,3x3,256,512,28x28"],
+		# [28*28*512 ,3*3*512*512,28*28*512*3*3*512,"CONV9,3x3,512,512,28x28"],
+		# [28*28*512 ,3*3*512*512,28*28*512*3*3*512,"CONV10,3x3,512,512,28x28"],
+		# [14*14*512 ,0,14*14*512*2*2*512,"POOL4,2x2,512,512,14x14"],
+		# [14*14*512 ,3*3*512*512,14*14*512*3*3*512,"CONV11,3x3,512,512,14x14"],
+		# [14*14*512 ,3*3*512*512,14*14*512*3*3*512,"CONV12,3x3,512,512,14x14"],
+		# [14*14*512 ,3*3*512*512,14*14*512*3*3*512,"CONV13,3x3,512,512,14x14"],
+		# [7*7*512,0,7*7*512*2*2*512,"POOL5,2x2,512,512,7x7"],
+		# [1*1*4096 ,7*7*512*4096,7*7*512*4096,"FC1,1x1x4096"],
+		# [1*1*4096 ,4096*4096,4096*4096,"FC2,1x1x4096"],
+		# [1*1*1000 ,4096*1000,4096*1000,"FC3,1x1x1000"]
+	# ]}
 
 	#ResNet50
 	# nw = {'in':244*244*3,'lay':[
@@ -337,7 +375,11 @@ def save_network(networkFileName):
 	fo.writelines(line)
 	for i in range(0,len(nw['lay'])):
 		layer = nw['lay'][i]
-		line = str(layer[0]) + "\t" + str(layer[1])+ "\t" + str(layer[2]) + "\n"
+		line = str(layer[0]) + "\t" + str(layer[1])+ "\t" + str(layer[2]) 
+		if len(layer) <= 3:
+			line = line + "\n"
+		else:
+			line = line + "\t" + str(layer[3]) + "\n"
 		fo.writelines(line)
 	fo.close()
 	
