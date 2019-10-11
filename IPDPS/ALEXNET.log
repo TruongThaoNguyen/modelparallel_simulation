@@ -1,0 +1,88 @@
+python parallel_analysis.py -net ALEXNET_ImageNet_prof.net -plat ABCI.plat -goal 1 --cmaxp 2048 --cmaxB 4096
+====================================
+Read platform from  ABCI.plat
+====================================
+FILE:  ABCI.plat
+MEM_PER_NODE:  8000000000.0
+NODE_SPEED:  7.8e+12
+BANDWIDTH:  12500000000.0
+LATENCY:  5e-07
+MAX_NODE:  4096.0
+====================================
+Read dataset and DNN from  ALEXNET_ImageNet_prof.net
+====================================
+DATASET:  ImageNet
+DATASET SIZE:  1280000.0
+SAMPLE SIZE: 3x226x226 153228
+====================================
+Model:  AlexNet
+LAYER	 x[C,W,H] 	 w[C,F,K,K] 	 y[F,W,H] 	 TComp
+CONV1 	[3, 226, 226] 	[3, 96, 11, 11] 	[96, 54, 54] 	0.00120901
+RELU 	[96, 54, 54] 	[96, 96, 0, 0] 	[96, 54, 54] 	5.926e-05
+MPOOL 	[96, 54, 54] 	[0, 0, 3, 3] 	[96, 27, 27] 	4.387e-05
+CONV2 	[96, 27, 27] 	[96, 256, 5, 5] 	[256, 27, 27] 	0.00025005
+RELU 	[256, 27, 27] 	[256, 256, 0, 0] 	[256, 27, 27] 	4.948e-05
+MPOOL 	[256, 27, 27] 	[0, 0, 3, 3] 	[256, 13, 13] 	4.021e-05
+CONV3 	[256, 13, 13] 	[256, 384, 3, 3] 	[384, 13, 13] 	0.00020321
+RELU 	[384, 13, 13] 	[384, 384, 0, 0] 	[384, 13, 13] 	4.715e-05
+CONV4 	[384, 13, 13] 	[384, 384, 3, 3] 	[384, 13, 13] 	0.00047687
+RELU 	[384, 13, 13] 	[384, 384, 0, 0] 	[384, 13, 13] 	4.556e-05
+CONV5 	[384, 13, 13] 	[384, 256, 3, 3] 	[256, 13, 13] 	0.00027486
+RELU 	[256, 13, 13] 	[256, 256, 0, 0] 	[256, 13, 13] 	4.383e-05
+MPOOL 	[256, 13, 13] 	[0, 0, 3, 3] 	[256, 6, 6] 	3.837e-05
+FC6 	[256, 6, 6] 	[256, 4096, 6, 6] 	[4096, 1, 1] 	0.00059829
+RELU 	[4096, 1, 1] 	[4096, 4096, 0, 0] 	[4096, 1, 1] 	4.257e-05
+DROPOUT 	[4096, 1, 1] 	[4096, 4096, 0, 0] 	[4096, 1, 1] 	8.593e-05
+FC7 	[4096, 1, 1] 	[4096, 4096, 1, 1] 	[4096, 1, 1] 	0.00015191
+RELU 	[4096, 1, 1] 	[4096, 4096, 0, 0] 	[4096, 1, 1] 	4.028e-05
+DROPOUT 	[4096, 1, 1] 	[4096, 4096, 0, 0] 	[4096, 1, 1] 	7.762e-05
+FC8 	[4096, 1, 1] 	[4096, 1000, 1, 1] 	[1000, 1, 1] 	9.346e-05
+Total |x|: 1579500 items
+Total |y|: 1427272 items
+Total |w|: 62367776 items
+Total comp: 0.00387179 items
+Max |y|: 279936 sec
+==========SINGLE-NODE===============
+maxBatchPerNode: 311.840147507
+mem4Sample: 522996384.0
+==========DATA PARALLELISM==========
+maxBatchPerNode: 311.840147507
+mem4Sample: 522996384.0
+==========FILTER PARALLELISM==========
+max_rank 96
+Not enough memory to store model and 512.0 samples in Filter-Parallelism with 2.0 GPUs
+Not enough memory to store model and 1024.0 samples in Filter-Parallelism with 4.0 GPUs
+Not enough memory to store model and 2048.0 samples in Filter-Parallelism with 8.0 GPUs
+Not enough memory to store model and 4096.0 samples in Filter-Parallelism with 16.0 GPUs
+Get result from Case 2 with miniBatch 256.0 nodeNumber 2.0
+Get result from Case 2 with miniBatch 256.0 nodeNumber 4.0
+Get result from Case 2 with miniBatch 256.0 nodeNumber 8.0
+Get result from Case 2 with miniBatch 256.0 nodeNumber 16.0
+Get result from Case 2 with miniBatch 256.0 nodeNumber 32.0
+Get result from Case 2 with miniBatch 256.0 nodeNumber 64.0
+==========Channel PARALLELISM==========
+max_rank 3
+Not enough memory to store model and 512.0 samples in Channel-Parallelism with 2.0 GPUs
+Get result from Case 2 with miniBatch 256.0 nodeNumber 2.0
+==========DATA + FILTER PARALLELISM==========
+maxBatchPerNode: 327.396974563
+mem4Sample: 148789728.0
+====================================
+name		B	p	Mem (bytes)	Tcomp (s)	Tcomm(s)	Time(s)	Cost(min*Node)
+single		256.0	1	6656811264.0	4955.8912	0	4955.8912	83.0
+data		512.0	2.0	6656811264.0	2477.9456	12.5185552	2490.4641552	84.0
+data		1024.0	4.0	6656811264.0	1238.9728	9.4226664	1248.3954664	84.0
+data		2048.0	8.0	6656811264.0	619.4864	21.9631391	641.4495391	88.0
+data		4096.0	16.0	6656811264.0	309.7432	11.83797675	321.58117675	96.0
+filter		256.0	2.0	6407340160.0	2477.9456	221.6403792	2699.5859792	90.0
+filter		256.0	4.0	6282604608.0	1238.9728	336.3080688	1575.2808688	108.0
+filter		256.0	8.0	6220236832.0	619.4864	1564.1748444	2183.6612444	296.0
+filter		256.0	16.0	6189052944.0	309.7432	1708.737894	2018.481094	544.0
+filter		256.0	32.0	6173461000.0	154.8716	1833.5574588	1988.4290588	1088.0
+filter		256.0	64.0	6165665028.0	77.4358	2001.0433212	2078.4791212	2240.0
+channel		256.0	2.0	6407340160.0	2477.9456	221.6403792	2699.5859792	90.0
+dfilter		256.0	4.0	6282604608.0	1238.9728	336.3080688	1575.2808688	108.0
+dfilter		512.0	8.0	6282604608.0	619.4864	218.1250652	837.6114652	112.0
+dfilter		1024.0	16.0	6282604608.0	309.7432	121.6128978	431.3560978	128.0
+dfilter		2048.0	32.0	6282604608.0	154.8716	64.0016477	218.8732477	128.0
+dfilter		4096.0	64.0	6282604608.0	77.4358	32.85723105	110.29303105	128.0
