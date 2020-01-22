@@ -33,8 +33,6 @@
 #		max-mini-batch
 #		batch-per-node?
 #		max-node
-#	parameters:
-#		mixMemMode: The way to estimate the memory.  0-Separate   1-Mix Mode
 # 
 # Ouput: Tried to generate all the cases based on the constrains. 
 # 		TODO: and then sort them by the goal.
@@ -51,12 +49,39 @@ import igraph
 import time
 import argparse
 
+##-----------CONSTANT-------------
 GOAL_COST = 1	
 GOAL_PERFORMANCE = 2
 GOAL_MEM = 3
 
 ALGORITHM_RING = 1
 
+PARATYPE_ALL = "a" #all
+PARATYPE_SEQENTIAL = "o" #one node
+PARATYPE_SPATIAL = "s" # spatial
+PARATYPE_PIPE = "p" #pipe
+PARATYPE_FILTER = "f" #filter
+PARATYPE_CHANNEL = "c" #channel
+PARATYPE_DATA = "d" #data
+PARATYPE_DATA_SPATIAL = "ds" #data + spatial
+PARATYPE_DATA_FILTER = "df" # data + filter
+
+##----------GLOBAL VALUE----------
+class GlobalVal:
+	GOAL = GOAL_PERFORMANCE
+	MAX_MINIBATCH = 256.0
+	MAX_RANK = 128  #Required from users.
+	FIX_MIRCO_BATCH = None	
+	NODE_SPEED = 7.8E12 # double precision flop for NVIDIA Tesla V100
+	MEM_PER_NODE = 16e9
+	BYTE_PER_ITEM = 4.0 #Bytes
+	ITEM_PER_NODE = MEM_PER_NODE/BYTE_PER_ITEM
+	BW_FACTOR = 1/12.5E9
+	LATENCY_FACTOR = 500E-9
+	TOTAL_SAMPLE = 0
+	GPU_PER_NODE = 4
+
+##---------PARSER-----------------
 argumentparser = argparse.ArgumentParser()
 argumentparser.add_argument('-net', help="filename of the dataset specification and the model specification(*.net)")
 argumentparser.add_argument('-plat', help="filename of the computer system specification (*.plat)")
@@ -64,117 +89,87 @@ argumentparser.add_argument('-goal', type=int, help="Goal of the analysis 1.Perf
 argumentparser.add_argument('--cmaxB', type=int, help="Constrain: Maximum mini-Batch size")
 argumentparser.add_argument('--cmaxp', type=int, help="Constrain: Maximum number of node")
 argumentparser.add_argument('--cBon', type=int, help="Constrain: Micro-batch size per node")
-argumentparser.add_argument('--pSer', type=int, help="Parameter: Serialize some layers that cannot be paralllel with the same number of node p. For example first layer for Channel parallelism and Fully connected layer for spatial") # TODO
-
+argumentparser.add_argument('--paratype', help='''parallelism type a: all, o: sequential in one PE, s: spatial, p:pipeline, f:filter, c:channel,d:data.
+Multiple type can be seperated by ",". Other than that it is hybrid.
+For example, ds refers to hybrid of data + spatial but d|s refers to analysis of data and spatial''')
+argumentparser.add_argument('--debug', help="Debug mode. any character mean yes")
 ##--------MAIN FUNCTION-----------
 def main(args):
 	#1. GET Argment
 	netFileName = str(args.net)
 	platFileName = str(args.plat)
+	paratype = "a"
+	if args.paratype is not None:
+		paratype = str(args.paratype)
+	paraTypes = paratype.split(',')
 	
-	GOAL = GOAL_PERFORMANCE
+	debug = False
+	if args.debug is not None:
+		debug = True
+	g = GlobalVal()
 	if args.goal is not None:
-		GOAL = int(args.goal)
-	MAX_MINIBATCH = 256.0
+		g.GOAL = int(args.goal)
 	if args.cmaxB is not None:
-		MAX_MINIBATCH = float(args.cmaxB)
-	MAX_RANK = 128  #Required from users.
+		g.MAX_MINIBATCH = float(args.cmaxB)
 	if args.cmaxp is not None:
-		MAX_RANK = float(args.cmaxp)
-	FIX_MIRCO_BATCH = None
+		g.MAX_RANK = float(args.cmaxp)
 	if args.cBon is not None:
-		FIX_MIRCO_BATCH = float(args.cBon)
-	
+		g.FIX_MIRCO_BATCH = float(args.cBon)
+
+	print "#######################################################"	
+	print "-net", netFileName, "-plat",platFileName ,"-goal",g.GOAL, "--paratype", paraTypes
+	print "--cmaxB", g.MAX_MINIBATCH, "--cmaxp", g.MAX_RANK, "--cBon", g.FIX_MIRCO_BATCH	
 	#2. Load Platform, Dataset and DNN
 	platform = load_platform(platFileName)
-	MAX_RANK = min(MAX_RANK,platform['max_node'])
-	NODE_SPEED = platform['node_speed']
-	MEM_PER_NODE = platform['mem_per_node']
-	print_platform(platform)
-	data, network = load_network(netFileName,NODE_SPEED)
-	print_dataset(data)
-	print_network_all(network)
-	totalIn,totalWeight,totalOut,totalComp,maxOut = summary_network2(network)
-	sample_size = network['lays'][0]['in']
+	g.MAX_RANK = min(g.MAX_RANK,platform['max_node'])
+	g.NODE_SPEED = platform['node_speed']
+	g.MEM_PER_NODE = platform['mem_per_node']
+	if debug == True:	
+		print_platform(platform)
+	data, network = load_network(netFileName,g.NODE_SPEED)
+	if debug == True:	
+		print_dataset(data)
+	if debug == True:		
+		print_network_all(network)
+	metaData = summary_network2(network, debug)
 	
 	#3. Other Parameter
-	BYTE_PER_ITEM = 4.0 #Bytes
-	ITEM_PER_NODE = MEM_PER_NODE/BYTE_PER_ITEM
-	BW_FACTOR = 1/platform['bandwidth']
-	LATENCY_FACTOR = platform['latency']
-	TOTAL_SAMPLE = data['size']
-	GPU_PER_NODE = 4
+	g.BYTE_PER_ITEM = 4.0 #Bytes
+	g.ITEM_PER_NODE = g.MEM_PER_NODE/g.BYTE_PER_ITEM
+	g.BW_FACTOR = 1/platform['bandwidth']
+	g.LATENCY_FACTOR = platform['latency']
+	g.TOTAL_SAMPLE = data['size']
+	g.GPU_PER_NODE = int(platform['gpu_per_node'])
 	
 	# 3.2. Preprocess
 	minW = network['lays'][0]['x'][1]
 	minFilter = network['lays'][0]['y'][0]
 	minChannel = network['lays'][0]['x'][0]
-	print minW, minFilter,minChannel
 	for i in range(0,len(network['lays'])):
 		layer = network['lays'][i]
 		minW = min(minW,layer['x'][1])
 		minW = min(minW,layer['y'][1])
 		minFilter = min(minFilter,layer['y'][0])
 		minChannel = min(minChannel,layer['x'][0])
+	metaData["minW"] = minW
+	metaData["minFilter"] = minFilter
+	metaData["minChannel"] = minChannel
+	if debug == True:
+		print metaData
+		
 	#4. Analysis
 	results=[]
-	
 	# 4.1. Sequential implementation
-	print "==========SINGLE-NODE==============="
-	maxBatchPerNode = float(ITEM_PER_NODE - 2*totalWeight)/(sample_size + 2 * totalOut)
-	#maxBatchPerNode = float(ITEM_PER_NODE - 2*totalWeight)/(sample_size + totalOut) - 1
-	if maxBatchPerNode < 1:
-		print "Not enough memory to store model and 1 sample"
-	else:
-		print "maxBatchPerNode: " + str(maxBatchPerNode)
-		# mem4Sample = 2*(1*(totalIn + totalOut) + totalWeight)*BYTE_PER_ITEM
-		# print "mem4Sample: " + str(mem4Sample)
-		
-		miniBatch = math.pow(2,int(math.log(maxBatchPerNode,2)))
-		if FIX_MIRCO_BATCH is not None:
-			print "Use FIX_MIRCO_BATCH set by user for miniBatch, ", FIX_MIRCO_BATCH
-			miniBatch = FIX_MIRCO_BATCH
-		
-		memPerNode = (miniBatch*sample_size +  2*miniBatch*totalOut + 2*totalWeight)*BYTE_PER_ITEM
-		#memPerNode = (miniBatch*sample_size +  (1+miniBatch)*totalOut + 2*totalWeight)*BYTE_PER_ITEM
-		print totalComp, TOTAL_SAMPLE
-		Tcomp = TOTAL_SAMPLE*totalComp
-		Tcomm = 0
-		nodeNumber = 1
-		result = {'name':'single','B':miniBatch,'p':nodeNumber,'mMem':memPerNode,'Tcomp':Tcomp,'Tcomm':Tcomm}
-		results.append(result)
-	print_result(results)
+	if ("a" in paraTypes) or ("o" in paraTypes):
+		analysis_sequential(network,g,metaData,results)
 
 	# 4.2. Data Paralllelism
-	#+ For data parallelism, find the biggest micro-batch size (samples per GPU), e.g., 512 in case of ALEXNET, 16 in case of VGG. Then I tried all the case whenever (p <= maxP) and (miniBatch <= maxB ). maxP and maxB are parameter passed by users. For example set maxP = 2048 and maxB =4096, respectively
+	if ("a" in paraTypes) or ("d" in paraTypes):
+		analysis_data(network, platform, g, metaData, results)
 	
-	print "==========DATA PARALLELISM=========="
-	maxBatchPerNode = float(ITEM_PER_NODE/2 - totalWeight)/(totalIn + totalOut)
-	if maxBatchPerNode < 1:
-		print "Not enough memory to store model and 1 sample"
-	else:
-		print "maxBatchPerNode: " + str(maxBatchPerNode)
-		microBatch = math.pow(2,int(math.log(maxBatchPerNode,2)))
-		if FIX_MIRCO_BATCH == None:
-			FIX_MIRCO_BATCH = microBatch
-		else:
-			print "Use FIX_MIRCO_BATCH set by user, ", FIX_MIRCO_BATCH
-			microBatch = FIX_MIRCO_BATCH
-			
-		maxIdx = int(math.log(MAX_RANK,2))
-		for i in range(1,maxIdx+1):
-			nodeNumber = math.pow(2,i)
-
-			miniBatch = microBatch * nodeNumber
-			if (miniBatch <= MAX_MINIBATCH):
-				memPerNode = 2*(microBatch*(totalIn + totalOut) + totalWeight)*BYTE_PER_ITEM
-				Tcomp = (TOTAL_SAMPLE/nodeNumber)*totalComp
-				bandwidth, latency = get_network_factor(platform,nodeNumber,ALGORITHM_RING)
-				alpha = latency
-				beta = 1/float(bandwidth)
-				Tcomm = 2*(TOTAL_SAMPLE/miniBatch)*(nodeNumber-1)*(alpha + totalWeight*BYTE_PER_ITEM*beta/nodeNumber)
-				result = {'name':'data','B':miniBatch,'p':nodeNumber,'mMem':memPerNode,'Tcomp':Tcomp,'Tcomm':Tcomm}
-				results.append(result)
+	print_result(results)
+	return
+		
 	# print_result(results)
 	# return
 	# 4.3. Spatial Parallelism
@@ -497,7 +492,75 @@ def main(args):
 				result = {'name':'dfilter','B':miniBatch,'p':nodeNumber,'mMem':memPerNode,'Tcomp':Tcomp,'Tcomm':Tcomm}
 				results.append(result)
 	print_result(results)
+
+def analysis_sequential(network, g, metaData, results):
+	print "==========SINGLE-NODE==============="
+	totalIn = metaData["totalIn"]
+	totalOut = metaData["totalOut"]
+	totalWeight = metaData["totalWeight"]
+	totalComp = metaData["totalComp"]
+	
+	maxSamplePerNode = float(g.ITEM_PER_NODE - 2*totalWeight)/(totalIn + totalOut)
+	if maxSamplePerNode < 1:
+		print "Not enough memory to store model and 1 sample"
+		return results
 		
+	print "maxSamplePerNode: " + str(maxSamplePerNode)
+	# mem4Sample = 2*(1*(totalIn + totalOut) + totalWeight)*BYTE_PER_ITEM
+	# print "mem4Sample: " + str(mem4Sample)
+	
+	miniBatch = math.pow(2,int(math.log(maxSamplePerNode,2)))
+	if g.FIX_MIRCO_BATCH is not None:
+		print "Use FIX_MIRCO_BATCH set by user for miniBatch: ", g.FIX_MIRCO_BATCH
+		miniBatch = g.FIX_MIRCO_BATCH
+	
+	memPerNode = 2*g.BYTE_PER_ITEM*(miniBatch*(totalOut + totalIn) + totalWeight)
+	Tcomp = g.TOTAL_SAMPLE*totalComp
+	Tcomm = 0
+	nodeNumber = 1
+	result = {'name':'single','B':miniBatch,'p':nodeNumber,'mMem':memPerNode,'Tcomp':Tcomp,'Tcomm':Tcomm}
+	results.append(result)
+	return results
+
+def analysis_data(network, platform, g, metaData, results):
+	#+ For data parallelism, find the biggest micro-batch size (samples per GPU), e.g., 512 in case of ALEXNET, 16 in case of VGG. Then I tried all the case whenever (p <= maxP) and (miniBatch <= maxB ). maxP and maxB are parameter passed by users. For example set maxP = 2048 and maxB =4096, respectively
+	print "==========DATA PARALLELISM=========="
+	totalIn = metaData["totalIn"]
+	totalOut = metaData["totalOut"]
+	totalWeight = metaData["totalWeight"]
+	totalComp = metaData["totalComp"]
+
+	maxSamplePerNode = float(g.ITEM_PER_NODE - 2*totalWeight)/(totalIn + totalOut)
+	if maxSamplePerNode < 1:
+		print "Not enough memory to store model and 1 sample"
+		return results
+
+	print "maxSamplePerNode: " + str(maxSamplePerNode)
+	microBatch = math.pow(2,int(math.log(maxSamplePerNode,2)))
+	if g.FIX_MIRCO_BATCH == None:
+		g.FIX_MIRCO_BATCH = microBatch
+	else:
+		print "Use FIX_MIRCO_BATCH set by user, ", g.FIX_MIRCO_BATCH
+		microBatch = g.FIX_MIRCO_BATCH
+		
+	maxIdx = int(math.log(g.MAX_RANK,2))
+	for i in range(1,maxIdx+1):
+		nodeNumber = math.pow(2,i)
+
+		miniBatch = microBatch * nodeNumber
+		if (miniBatch <= g.MAX_MINIBATCH):
+			memPerNode = 2*(microBatch*(totalIn + totalOut) + totalWeight)*g.BYTE_PER_ITEM
+			Tcomp = (g.TOTAL_SAMPLE/nodeNumber)*totalComp
+			bandwidth, latency = get_network_factor(platform,nodeNumber,ALGORITHM_RING)
+			alpha = latency
+			beta = 1/float(bandwidth)
+			Tcomm = 2*(g.TOTAL_SAMPLE/miniBatch)*(nodeNumber-1)*(alpha + totalWeight*g.BYTE_PER_ITEM*beta/nodeNumber)
+			result = {'name':'data','B':miniBatch,'p':nodeNumber,'mMem':memPerNode,'Tcomp':Tcomp,'Tcomm':Tcomm}
+			results.append(result)		
+	return results
+
+
+#################################################################
 # This version is only support for ABCI and ring-based algorithms
 # In this example, generate the topology like ABCI. 
 # 	+ 1:3 oversubscription FBB-SPINE (4 links each...)
@@ -559,7 +622,7 @@ def get_network_factor(plat,rank, algorithm):
 	return bandwidth,latency
 	
 def print_result(results):
-	print "===================================="
+	print "==================SUMMARY=================="
 	line = "name\t\tB\tp\tMem (bytes)\tTcomp (s)\tTcomm(s)\tTime(s)\tCost(min*Node)"
 	print line
 	for i in range(0,len(results)):
@@ -633,6 +696,11 @@ def load_platform(platFileName):
 				plat['max_node'] = float(splitLine[1])
 			else:
 				print '[WARNING] Invalid format at line ' + str(lineIdx)
+		if (lineIdx == 6): # GPU_PER_NODE
+			if len(splitLine) >= 2:
+				plat['gpu_per_node'] = float(splitLine[1])
+			else:
+				print '[WARNING] Invalid format at line ' + str(lineIdx)
 		lineIdx = lineIdx + 1
 	f.close()
 	#print "===================================="
@@ -699,11 +767,17 @@ def load_network(networkFileName, NODE_SPEED):
 					layer['comp'] = float(splitLine[4])
 				else:
 					#FlopCount of FW
-					if ("CONV" in layer['name']): # Wy * Hy * C * F * K * K
+					if ("CONV" in layer['name']): # 2 * Wy * Hy * C * F * K * K
 						layer['comp'] = layer['w'][0] * layer['w'][1]
 						for i in range(2,len( layer['w'])):
 							layer['comp'] = layer['comp'] * layer['w'][i] * layer['y'][i-1]
-					elif ("MPOOL" in layer['name']): # # Wy * Hy * C * F * K * K 
+						#Factor of 2: 1 for add, 1 for mul
+						layer['comp'] = 2 * layer['comp']
+					elif ("MPOOL" in layer['name']): # Wy * Hy * C * F * K * K 
+						layer['comp'] = layer['x'][0] * layer['y'][0]  #C *F
+						for i in range(2,len( layer['w'])):
+							layer['comp'] = layer['comp'] * layer['w'][i] * layer['y'][i-1]
+					elif ("APOOL" in layer['name']): # Wy * Hy * C * F * K * K 
 						layer['comp'] = layer['x'][0] * layer['y'][0]  #C *F
 						for i in range(2,len( layer['w'])):
 							layer['comp'] = layer['comp'] * layer['w'][i] * layer['y'][i-1]
@@ -715,6 +789,16 @@ def load_network(networkFileName, NODE_SPEED):
 						layer['comp'] = 1
 						for i in range(0,len( layer['w'])):
 							layer['comp'] = layer['comp'] * layer['w'][i]
+					elif ("BNORM" in layer['name']): # 4* Wx * Hx * C  (this calculation per item, will multiple with Batch later)
+						layer['comp'] = layer['x'][0]
+						for i in range(1,len( layer['x'])):
+							layer['comp'] = layer['comp'] * layer['x'][i]
+						# Factor of 4 are: 1 for mini-batch mean, 1 formini-batch variance, 1 for normalize 1 for scale and shift
+						layer['comp'] = 4 * layer['comp']
+					elif ("ADD" in layer['name']): # Wy * Hy * F  (this calculation per item, will multiple with Batch later)
+						layer['comp'] = layer['y'][0]
+						for i in range(1,len( layer['y'])):
+							layer['comp'] = layer['comp'] * layer['y'][i]
 					#elif ("DROPOUT" in layer['name']): #
 					else:
 						layer['comp'] = 0 #Default
@@ -762,16 +846,19 @@ def summary_network(nw):
 	print "Max |y|: " + str(maxOut) + " sec"
 	return totalIn,totalWeight,totalOut,totalComp,maxOut
 
-def summary_network2(nw):
+def summary_network2(nw, debug):
 	totalWeight = 0;
 	totalComp = 0;
 	totalIn = 0;
 	totalOut = 0;
 	maxOut = 0;
+	maxComp = 0;
 	for i in range(0,len(nw['lays'])):
 		layer = nw['lays'][i]
 		if maxOut < layer['out']:
 			maxOut = layer['out']
+		if maxComp < layer['comp']:
+			maxComp = layer['comp']
 		if 	("RELU" in layer['name']) or ("BNORM" in layer['name']):
 			totalOut = totalOut + 0
 			totalIn = totalIn + 0
@@ -780,12 +867,15 @@ def summary_network2(nw):
 			totalIn = totalIn + layer['in']
 		totalWeight = totalWeight + layer['weight']
 		totalComp = totalComp + layer['comp']
-	print "Total |x|: " + str(totalIn) + " items"
-	print "Total |y|: " + str(totalOut) + " items"
-	print "Total |w|: " + str(totalWeight) + " items"
-	print "Total comp: " + str(totalComp) + " items"
-	print "Max |y|: " + str(maxOut) + " sec"
-	return totalIn,totalWeight,totalOut,totalComp,maxOut
+	if debug == True:
+		print "Total |x|: " + str(totalIn) + " items"
+		print "Total |y|: " + str(totalOut) + " items"
+		print "Total |w|: " + str(totalWeight) + " items"
+		print "Total comp: " + str(totalComp) + " sec" 
+		print "Max comp: " + str(maxComp) + " sec ==>" + str(1/totalComp) + "samples for 100% GPU ultilization"
+		print "Max |y|: " + str(maxOut) + " items"
+	metaData = {"totalIn":totalIn,"totalOut":totalOut,"totalWeight":totalWeight,"totalComp":totalComp,"maxOut":maxOut}
+	return metaData
 	
 def print_network_all(nw):
 	print "===================================="

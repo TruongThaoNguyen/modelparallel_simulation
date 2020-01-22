@@ -1,0 +1,97 @@
+====================================
+Read platform from  ABCI.plat
+====================================
+FILE:  ABCI.plat
+MEM_PER_NODE:  16000000000.0
+NODE_SPEED:  7.8e+12
+BANDWIDTH:  12500000000.0
+LATENCY:  5e-07
+MAX_NODE:  4096.0
+====================================
+Read dataset and DNN from  ALEXNET_ImageNet_prof.net
+====================================
+DATASET:  ImageNet
+DATASET SIZE:  1280000.0
+SAMPLE SIZE: 3x226x226 153228
+====================================
+Model:  AlexNet
+LAYER	 x[C,W,H] 	 w[C,F,K,K] 	 y[F,W,H] 	 TComp
+CONV1 	[3, 226, 226] 	[3, 96, 11, 11] 	[96, 54, 54] 	0.00120901
+RELU 	[96, 54, 54] 	[96, 96, 0, 0] 	[96, 54, 54] 	5.926e-05
+MPOOL 	[96, 54, 54] 	[0, 0, 3, 3] 	[96, 27, 27] 	4.387e-05
+CONV2 	[96, 27, 27] 	[96, 256, 5, 5] 	[256, 27, 27] 	0.00025005
+RELU 	[256, 27, 27] 	[256, 256, 0, 0] 	[256, 27, 27] 	4.948e-05
+MPOOL 	[256, 27, 27] 	[0, 0, 3, 3] 	[256, 13, 13] 	4.021e-05
+CONV3 	[256, 13, 13] 	[256, 384, 3, 3] 	[384, 13, 13] 	0.00020321
+RELU 	[384, 13, 13] 	[384, 384, 0, 0] 	[384, 13, 13] 	4.715e-05
+CONV4 	[384, 13, 13] 	[384, 384, 3, 3] 	[384, 13, 13] 	0.00047687
+RELU 	[384, 13, 13] 	[384, 384, 0, 0] 	[384, 13, 13] 	4.556e-05
+CONV5 	[384, 13, 13] 	[384, 256, 3, 3] 	[256, 13, 13] 	0.00027486
+RELU 	[256, 13, 13] 	[256, 256, 0, 0] 	[256, 13, 13] 	4.383e-05
+MPOOL 	[256, 13, 13] 	[0, 0, 3, 3] 	[256, 6, 6] 	3.837e-05
+FC6 	[256, 6, 6] 	[256, 4096, 6, 6] 	[4096, 1, 1] 	0.00059829
+RELU 	[4096, 1, 1] 	[4096, 4096, 0, 0] 	[4096, 1, 1] 	4.257e-05
+DROPOUT 	[4096, 1, 1] 	[4096, 4096, 0, 0] 	[4096, 1, 1] 	8.593e-05
+FC7 	[4096, 1, 1] 	[4096, 4096, 1, 1] 	[4096, 1, 1] 	0.00015191
+RELU 	[4096, 1, 1] 	[4096, 4096, 0, 0] 	[4096, 1, 1] 	4.028e-05
+DROPOUT 	[4096, 1, 1] 	[4096, 4096, 0, 0] 	[4096, 1, 1] 	7.762e-05
+FC8 	[4096, 1, 1] 	[4096, 1000, 1, 1] 	[1000, 1, 1] 	9.346e-05
+Total |x|: 1579500 items
+Total |y|: 1427272 items
+Total |w|: 62367776 items
+Total comp: 0.00387179 items
+Max |y|: 279936 sec
+226 96 3
+==========SINGLE-NODE===============
+maxBatchPerNode: 644.422731088
+mem4Sample: 522996384.0
+==========DATA PARALLELISM==========
+maxBatchPerNode: 644.422731088
+mem4Sample: 522996384.0
+==========SPATIAL PARALLELISM==========
+2048.0 1
+max_rank 1
+==========FILTER PARALLELISM==========
+max_rank 96
+Not enough memory to store model and 1024.0 samples in Filter-Parallelism with 2.0 GPUs
+Not enough memory to store model and 2048.0 samples in Filter-Parallelism with 4.0 GPUs
+Not enough memory to store model and 4096.0 samples in Filter-Parallelism with 8.0 GPUs
+Not enough memory to store model and 8192.0 samples in Filter-Parallelism with 16.0 GPUs
+Not enough memory to store model and 16384.0 samples in Filter-Parallelism with 32.0 GPUs
+Not enough memory to store model and 32768.0 samples in Filter-Parallelism with 64.0 GPUs
+Get result from Case 2 with miniBatch 512.0 nodeNumber 2.0
+Get result from Case 2 with miniBatch 512.0 nodeNumber 4.0
+Get result from Case 2 with miniBatch 512.0 nodeNumber 8.0
+Get result from Case 2 with miniBatch 512.0 nodeNumber 16.0
+Get result from Case 2 with miniBatch 512.0 nodeNumber 32.0
+Get result from Case 2 with miniBatch 512.0 nodeNumber 64.0
+==========Channel PARALLELISM==========
+max_rank 3
+Not enough memory to store model and 1024.0 samples in Channel-Parallelism with 2.0 GPUs
+Get result from Case 2 with miniBatch 512.0 nodeNumber 2.0
+==========DATA + FILTER PARALLELISM==========
+maxBatchPerNode: 659.979558144
+mem4Sample: 148789728.0
+====================================
+name		B	p	Mem (bytes)	Tcomp (s)	Tcomm(s)	Time(s)	Cost(min*Node)
+single		512.0	1	12814680320.0	4955.8912	0	4955.8912	83.0
+data		1024.0	2.0	12814680320.0	2477.9456	6.2592776	2484.2048776	84.0
+data		2048.0	4.0	12814680320.0	1238.9728	4.7113332	1243.6841332	84.0
+data		4096.0	8.0	12814680320.0	619.4864	10.98134205	630.46774205	88.0
+data		8192.0	16.0	12814680320.0	309.7432	5.918744625	315.661944625	96.0
+data		16384.0	32.0	12814680320.0	154.8716	3.0950969625	157.966696963	96.0
+data		32768.0	64.0	12814680320.0	77.4358	1.61018589375	79.0459858938	128.0
+filter		512.0	2.0	12565209216.0	2477.9456	220.3578792	2698.3034792	90.0
+filter		512.0	4.0	12440473664.0	1238.9728	332.4605688	1571.4333688	108.0
+filter		512.0	8.0	12378105888.0	619.4864	1548.7993794	2168.2857794	296.0
+filter		512.0	16.0	12346922000.0	309.7432	1675.790469	1985.533669	544.0
+filter		512.0	32.0	12331330056.0	154.8716	1765.4661138	1920.3377138	1056.0
+filter		512.0	64.0	12323534084.0	77.4358	1862.6641362	1940.0999362	2112.0
+channel		512.0	2.0	12565209216.0	2477.9456	220.3578792	2698.3034792	90.0
+dfilter		512.0	4.0	12440473664.0	1238.9728	332.4605688	1571.4333688	108.0
+dfilter		1024.0	8.0	12440473664.0	619.4864	191.2156698	810.7020698	112.0
+dfilter		2048.0	16.0	12440473664.0	309.7432	101.8828875	411.6260875	112.0
+dfilter		4096.0	32.0	12440473664.0	154.8716	52.53891315	207.41051315	128.0
+dfilter		8192.0	64.0	12440473664.0	77.4358	26.697530175	104.133330175	128.0
+dfilter		16384.0	128.0	12440473664.0	38.7179	13.4853616125	52.2032616125	128.0
+dfilter		32768.0	256.0	12440473664.0	19.35895	6.8081799375	26.1671299375	256.0

@@ -1,0 +1,174 @@
+====================================
+Read platform from  ABCI.plat
+====================================
+FILE:  ABCI.plat
+MEM_PER_NODE:  16000000000.0
+NODE_SPEED:  7.8e+12
+BANDWIDTH:  12500000000.0
+LATENCY:  5e-07
+MAX_NODE:  4096.0
+====================================
+Read dataset and DNN from  VGG_ImageNet_prof.net
+====================================
+DATASET:  ImageNet
+DATASET SIZE:  1280000.0
+SAMPLE SIZE: 3x226x226 153228
+====================================
+Model:  VGG16
+LAYER	 x[C,W,H] 	 w[C,F,K,K] 	 y[F,W,H] 	 TComp
+CONV1_1 	[3, 226, 226] = 153228 	[3, 64, 3, 3] = 1728 	[64, 226, 226] = 3268864 	0.00118
+RELU 	[64, 226, 226] = 3268864 	[64, 64, 0, 0] = 0 	[64, 226, 226] = 3268864 	0.000215
+CONV1_2 	[64, 226, 226] = 3268864 	[64, 64, 3, 3] = 36864 	[64, 226, 226] = 3268864 	0.000269
+RELU 	[64, 226, 226] = 3268864 	[64, 64, 0, 0] = 0 	[64, 226, 226] = 3268864 	7.26e-05
+MPOOL 	[64, 226, 226] = 3268864 	[0, 0, 2, 2] = 0 	[64, 113, 113] = 817216 	5.88e-05
+CONV2_1 	[64, 113, 113] = 817216 	[64, 128, 3, 3] = 73728 	[128, 113, 113] = 1634432 	0.000162
+RELU 	[128, 113, 113] = 1634432 	[128, 128, 0, 0] = 0 	[128, 113, 113] = 1634432 	5.44e-05
+CONV2_2 	[128, 113, 113] = 1634432 	[128, 128, 3, 3] = 147456 	[128, 113, 113] = 1634432 	0.000236
+RELU 	[128, 113, 113] = 1634432 	[128, 128, 0, 0] = 0 	[128, 113, 113] = 1634432 	5.37e-05
+MPOOL 	[128, 113, 113] = 1634432 	[0, 0, 2, 2] = 0 	[128, 57, 57] = 415872 	4.3e-05
+CONV3_1 	[128, 57, 57] = 415872 	[128, 256, 3, 3] = 294912 	[256, 57, 57] = 831744 	0.000167
+RELU 	[256, 57, 57] = 831744 	[256, 256, 0, 0] = 0 	[256, 57, 57] = 831744 	4.64e-05
+CONV3_2 	[256, 57, 57] = 831744 	[256, 256, 3, 3] = 589824 	[256, 57, 57] = 831744 	0.000268
+RELU 	[256, 57, 57] = 831744 	[256, 256, 0, 0] = 0 	[256, 57, 57] = 831744 	4.56e-05
+CONV3_3 	[256, 57, 57] = 831744 	[256, 256, 3, 3] = 589824 	[256, 57, 57] = 831744 	0.000268
+RELU 	[256, 57, 57] = 831744 	[256, 256, 0, 0] = 0 	[256, 57, 57] = 831744 	4.6e-05
+MPOOL 	[256, 57, 57] = 831744 	[0, 0, 2, 2] = 0 	[256, 29, 29] = 215296 	4.08e-05
+CONV4_1 	[256, 29, 29] = 215296 	[256, 512, 3, 3] = 1179648 	[512, 29, 29] = 430592 	0.000297
+RELU 	[512, 29, 29] = 430592 	[512, 512, 0, 0] = 0 	[512, 29, 29] = 430592 	4.59e-05
+CONV4_2 	[512, 29, 29] = 430592 	[512, 512, 3, 3] = 2359296 	[512, 29, 29] = 430592 	0.000531
+RELU 	[512, 29, 29] = 430592 	[512, 512, 0, 0] = 0 	[512, 29, 29] = 430592 	4.69e-05
+CONV4_3 	[512, 29, 29] = 430592 	[512, 512, 3, 3] = 2359296 	[512, 29, 29] = 430592 	0.000531
+RELU 	[512, 29, 29] = 430592 	[512, 512, 0, 0] = 0 	[512, 29, 29] = 430592 	4.64e-05
+MPOOL 	[512, 29, 29] = 430592 	[0, 0, 2, 2] = 0 	[512, 15, 15] = 115200 	4.2e-05
+CONV5_1 	[512, 15, 15] = 115200 	[512, 512, 3, 3] = 2359296 	[512, 15, 15] = 115200 	0.000361
+RELU 	[512, 15, 15] = 115200 	[512, 512, 0, 0] = 0 	[512, 15, 15] = 115200 	4.79e-05
+CONV5_2 	[512, 15, 15] = 115200 	[512, 512, 3, 3] = 2359296 	[512, 15, 15] = 115200 	0.000357
+RELU 	[512, 15, 15] = 115200 	[512, 512, 0, 0] = 0 	[512, 15, 15] = 115200 	4.73e-05
+CONV5_3 	[512, 15, 15] = 115200 	[512, 512, 3, 3] = 2359296 	[512, 15, 15] = 115200 	0.000358
+RELU 	[512, 15, 15] = 115200 	[512, 512, 0, 0] = 0 	[512, 15, 15] = 115200 	4.62e-05
+MPOOL 	[512, 15, 15] = 115200 	[0, 0, 2, 2] = 0 	[512, 8, 8] = 32768 	4.13e-05
+FC6 	[512, 8, 8] = 32768 	[512, 4096, 8, 8] = 134217728 	[4096, 1, 1] = 4096 	0.00109
+RELU 	[4096, 1, 1] = 4096 	[4096, 4096, 0, 0] = 0 	[4096, 1, 1] = 4096 	4.61e-05
+DROPOUT 	[4096, 1, 1] = 4096 	[4096, 4096, 0, 0] = 0 	[4096, 1, 1] = 4096 	8.83e-05
+FC7 	[4096, 1, 1] = 4096 	[4096, 4096, 1, 1] = 16777216 	[4096, 1, 1] = 4096 	0.000151
+RELU 	[4096, 1, 1] = 4096 	[4096, 4096, 0, 0] = 0 	[4096, 1, 1] = 4096 	4.24e-05
+DROPOUT 	[4096, 1, 1] = 4096 	[4096, 4096, 0, 0] = 0 	[4096, 1, 1] = 4096 	7.89e-05
+FC8 	[4096, 1, 1] = 4096 	[4096, 1000, 1, 1] = 4096000 	[1000, 1, 1] = 1000 	9.58e-05
+Total |x|: 15705164 items
+Total |y|: 15552936 items
+Total |w|: 169801408 items
+Total comp: 0.0076177 items
+Max |y|: 3268864 sec
+226 64 3
+==========SINGLE-NODE===============
+maxBatchPerNode: 117.098610773
+Use FIX_MIRCO_BATCH set by user for miniBatch,  64.0
+0.0076177 1280000.0
+====================================
+name		B	p	Mem (bytes)	Tcomp (s)	Tcomm(s)	Time(s)	Cost(min*Node)
+single		64.0	1	9360740864.0	9750.656	0	9750.656	163.0
+==========DATA PARALLELISM==========
+maxBatchPerNode: 58.5511784785
+Use FIX_MIRCO_BATCH set by user,  64.0
+==========SPATIAL PARALLELISM==========
+2048.0 1
+max_rank 1
+====================================
+name		B	p	Mem (bytes)	Tcomp (s)	Tcomm(s)	Time(s)	Cost(min*Node)
+single		64.0	1	9360740864.0	9750.656	0	9750.656	163.0
+data		128.0	2.0	17362558464.0	4875.328	136.0211264	5011.3491264	168.0
+data		256.0	4.0	17362558464.0	2437.664	102.1508448	2539.8148448	172.0
+data		512.0	8.0	17362558464.0	1218.832	238.2578212	1457.0898212	200.0
+data		1024.0	16.0	17362558464.0	609.416	127.925181	737.341181	208.0
+data		2048.0	32.0	17362558464.0	304.708	66.3913081	371.0993081	224.0
+data		4096.0	64.0	17362558464.0	152.354	34.03248345	186.38648345	256.0
+data		8192.0	128.0	17362558464.0	76.177	17.462242825	93.639242825	256.0
+data		16384.0	256.0	17362558464.0	38.0885	9.0936091875	47.1821091875	256.0
+data		32768.0	512.0	17362558464.0	19.04425	4.87469567812	23.9189456781	512.0
+data		65536.0	1024.0	17362558464.0	9.522125	2.75902061016	12.2811456102	1024.0
+data		131072.0	2048.0	17362558464.0	4.7610625	1.69962849785	6.46069099785	2048.0
+==========FILTER PARALLELISM==========
+max_rank 64
+Not enough memory to store model and 128.0 samples in Filter-Parallelism with 2.0 GPUs
+Not enough memory to store model and 256.0 samples in Filter-Parallelism with 4.0 GPUs
+Not enough memory to store model and 512.0 samples in Filter-Parallelism with 8.0 GPUs
+Not enough memory to store model and 1024.0 samples in Filter-Parallelism with 16.0 GPUs
+Not enough memory to store model and 2048.0 samples in Filter-Parallelism with 32.0 GPUs
+Not enough memory to store model and 4096.0 samples in Filter-Parallelism with 64.0 GPUs
+Get result from Case 2 with miniBatch 32.0 nodeNumber 2.0
+Get result from Case 2 with miniBatch 32.0 nodeNumber 4.0
+Get result from Case 2 with miniBatch 32.0 nodeNumber 8.0
+Get result from Case 2 with miniBatch 32.0 nodeNumber 16.0
+Get result from Case 2 with miniBatch 32.0 nodeNumber 32.0
+Get result from Case 2 with miniBatch 32.0 nodeNumber 64.0
+==========Channel PARALLELISM==========
+max_rank 3
+Not enough memory to store model and 128.0 samples in Channel-Parallelism with 2.0 GPUs
+Get result from Case 2 with miniBatch 32.0 nodeNumber 2.0
+==========VModel and Pipeline PARALLELISM==========
+max_rank 38
+---------- 2 --------
+compositeLayers 0 : layer  0  to  18
+compositeLayers 1 : layer  19  to  37
+Not enough memory to store a part of model and 128.0 samples in VModel-Parallelism with 2 GPUs
+---------- 4 --------
+compositeLayers 0 : layer  0  to  4
+compositeLayers 1 : layer  5  to  18
+compositeLayers 2 : layer  19  to  25
+compositeLayers 3 : layer  26  to  37
+Not enough memory to store a part of model and 256.0 samples in VModel-Parallelism with 4 GPUs
+---------- 8 --------
+compositeLayers 0 : layer  0  to  0
+compositeLayers 1 : layer  1  to  6
+compositeLayers 2 : layer  7  to  13
+compositeLayers 3 : layer  14  to  18
+compositeLayers 4 : layer  19  to  20
+compositeLayers 5 : layer  21  to  23
+compositeLayers 6 : layer  24  to  27
+compositeLayers 7 : layer  28  to  37
+Not enough memory to store a part of model and 512.0 samples in VModel-Parallelism with 8 GPUs
+---------- 16 --------
+compositeLayers 0 : layer  0  to  0
+compositeLayers 1 : layer  1  to  1
+compositeLayers 2 : layer  2  to  4
+compositeLayers 3 : layer  5  to  7
+compositeLayers 4 : layer  8  to  11
+compositeLayers 5 : layer  12  to  13
+compositeLayers 6 : layer  14  to  16
+compositeLayers 7 : layer  17  to  18
+compositeLayers 8 : layer  19  to  19
+compositeLayers 9 : layer  20  to  20
+compositeLayers 10 : layer  21  to  21
+compositeLayers 11 : layer  22  to  24
+compositeLayers 12 : layer  25  to  27
+compositeLayers 13 : layer  28  to  30
+compositeLayers 14 : layer  31  to  31
+compositeLayers 15 : layer  32  to  37
+Not enough memory to store a part of model and 1024.0 samples in VModel-Parallelism with 16 GPUs
+---------- 32 --------
+Cannot split model into 32 partitions using average method.
+====================================
+name		B	p	Mem (bytes)	Tcomp (s)	Tcomm(s)	Time(s)	Cost(min*Node)
+single		64.0	1	9360740864.0	9750.656	0	9750.656	163.0
+data		128.0	2.0	17362558464.0	4875.328	136.0211264	5011.3491264	168.0
+data		256.0	4.0	17362558464.0	2437.664	102.1508448	2539.8148448	172.0
+data		512.0	8.0	17362558464.0	1218.832	238.2578212	1457.0898212	200.0
+data		1024.0	16.0	17362558464.0	609.416	127.925181	737.341181	208.0
+data		2048.0	32.0	17362558464.0	304.708	66.3913081	371.0993081	224.0
+data		4096.0	64.0	17362558464.0	152.354	34.03248345	186.38648345	256.0
+data		8192.0	128.0	17362558464.0	76.177	17.462242825	93.639242825	256.0
+data		16384.0	256.0	17362558464.0	38.0885	9.0936091875	47.1821091875	256.0
+data		32768.0	512.0	17362558464.0	19.04425	4.87469567812	23.9189456781	512.0
+data		65536.0	1024.0	17362558464.0	9.522125	2.75902061016	12.2811456102	1024.0
+data		131072.0	2048.0	17362558464.0	4.7610625	1.69962849785	6.46069099785	2048.0
+filter		32.0	2.0	8681279232.0	4875.328	2428.7373696	7304.0653696	244.0
+filter		32.0	4.0	8341676416.0	2437.664	3703.0460544	6140.7100544	412.0
+filter		32.0	8.0	8171875008.0	1218.832	17197.2763872	18416.1083872	2456.0
+filter		32.0	16.0	8086974304.0	609.416	18935.476272	19544.892272	5216.0
+filter		32.0	32.0	8044523952.0	304.708	20620.2930144	20925.0010144	11168.0
+filter		32.0	64.0	8023298776.0	152.354	23094.1349856	23246.4889856	24832.0
+channel		32.0	2.0	8681279232.0	4875.328	2428.7373696	7304.0653696	244.0
+pipe		128.0	2	27440434688.0	7773.12	88.5452416	7861.6652416	264.0
+pipe		256.0	4	13886443008.0	5470.752	251.5887552	5722.3407552	384.0
+pipe		512.0	8	15063810048.0	4891.2	1172.1908576	6063.3908576	816.0
+pipe		1024.0	16	8787001344.0	2926.4	2511.635802	5438.035802	1456.0
