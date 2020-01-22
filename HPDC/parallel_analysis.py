@@ -80,6 +80,21 @@ class GlobalVal:
 	LATENCY_FACTOR = 500E-9
 	TOTAL_SAMPLE = 0
 	GPU_PER_NODE = 4
+	
+	def __str__(self):
+		print "GOAL", str(self.GOAL)
+		print "MAX_MINIBATCH", str(self.MAX_MINIBATCH)
+		print "MAX_RANK", str(self.MAX_RANK)
+		print "FIX_MIRCO_BATCH", str(self.FIX_MIRCO_BATCH)
+		print "NODE_SPEED", str(self.NODE_SPEED)
+		print "MEM_PER_NODE", str(self.MEM_PER_NODE)
+		print "ITEM_PER_NODE", str(self.ITEM_PER_NODE)
+		print "BW_FACTOR", str(self.BW_FACTOR)
+		print "LATENCY_FACTOR", str(self.LATENCY_FACTOR)
+		print "TOTAL_SAMPLE", str(self.TOTAL_SAMPLE)
+		print "GPU_PER_NODE", str(self.GPU_PER_NODE)
+		return ""
+		
 
 ##---------PARSER-----------------
 argumentparser = argparse.ArgumentParser()
@@ -140,7 +155,9 @@ def main(args):
 	g.LATENCY_FACTOR = platform['latency']
 	g.TOTAL_SAMPLE = data['size']
 	g.GPU_PER_NODE = int(platform['gpu_per_node'])
-	
+	if debug == True:		
+		print "****"
+		print "global value g", g
 	# 3.2. Preprocess
 	minW = network['lays'][0]['x'][1]
 	minFilter = network['lays'][0]['y'][0]
@@ -166,147 +183,368 @@ def main(args):
 	# 4.2. Data Paralllelism
 	if ("a" in paraTypes) or ("d" in paraTypes):
 		analysis_data(network, platform, g, metaData, results)
+
+	# 4.3. Spatial Parallelism
+	if ("a" in paraTypes) or ("s" in paraTypes):
+		analysis_spatial(network, platform, g, metaData, results)
+		
+	# 4.4. Filter Paralllelism
+	if ("a" in paraTypes) or ("f" in paraTypes):
+		analysis_filter(network, platform, g, metaData, results)
+
+	# 4.5. Channel Paralllelism		
+	if ("a" in paraTypes) or ("c" in paraTypes):
+		analysis_channel(network, platform, g, metaData, results)
 	
+	# 4.6 Pipeline Paralllelism and vModel
+	if ("a" in paraTypes) or ("p" in paraTypes):
+		analysis_pipeline(network, platform, g, metaData, results)
+	
+	# 4.7 Filter + Data Parallelism
+	if ("a" in paraTypes) or ("df" in paraTypes):
+		analysis_hybrid_df(network, platform, g, metaData, results)
 	print_result(results)
 	return
+
+
+def analysis_sequential(network, g, metaData, results):
+	print "==========SINGLE-NODE==============="
+	totalIn = metaData["totalIn"]
+	totalOut = metaData["totalOut"]
+	totalWeight = metaData["totalWeight"]
+	totalComp = metaData["totalComp"]
+	
+	maxSamplePerNode = float(g.ITEM_PER_NODE - 2*totalWeight)/(totalIn + totalOut)
+	if maxSamplePerNode < 1:
+		print "Not enough memory to store model and 1 sample"
+		return results
 		
-	# print_result(results)
-	# return
-	# 4.3. Spatial Parallelism
-	# For weak scaling,  use the same miniBatch size as they are in data parallelism (based on number of GPU)
-	# Only seperate the |W| dimension
-	print "==========SPATIAL PARALLELISM=========="
-	print MAX_RANK,minW
-	max_rank = min(MAX_RANK,minW)	
-	print "max_rank", max_rank
-	maxIdx = int(math.log(max_rank,2))
+	print "maxSamplePerNode: " + str(maxSamplePerNode)
+	# mem4Sample = 2*(1*(totalIn + totalOut) + totalWeight)*BYTE_PER_ITEM
+	# print "mem4Sample: " + str(mem4Sample)
+	
+	miniBatch = math.pow(2,int(math.log(maxSamplePerNode,2)))
+	if g.FIX_MIRCO_BATCH is not None:
+		print "Use FIX_MIRCO_BATCH set by user for miniBatch: ", g.FIX_MIRCO_BATCH
+		miniBatch = g.FIX_MIRCO_BATCH
+	
+	memPerNode = 2*g.BYTE_PER_ITEM*(miniBatch*(totalOut + totalIn) + totalWeight)
+	Tcomp = g.TOTAL_SAMPLE*totalComp
+	Tcomm = 0
+	nodeNumber = 1
+	result = {'name':'single','B':miniBatch,'p':nodeNumber,'mMem':memPerNode,'Tcomp':Tcomp,'Tcomm':Tcomm}
+	results.append(result)
+	return results
+
+def analysis_data(network, platform, g, metaData, results):
+	#+ For data parallelism, find the biggest micro-batch size (samples per GPU), e.g., 512 in case of ALEXNET, 16 in case of VGG. Then I tried all the case whenever (p <= maxP) and (miniBatch <= maxB ). maxP and maxB are parameter passed by users. For example set maxP = 2048 and maxB =4096, respectively
+	print "==========DATA PARALLELISM=========="
+	totalIn = metaData["totalIn"]
+	totalOut = metaData["totalOut"]
+	totalWeight = metaData["totalWeight"]
+	totalComp = metaData["totalComp"]
+
+	maxSamplePerNode = float(g.ITEM_PER_NODE - 2*totalWeight)/(totalIn + totalOut)
+	if maxSamplePerNode < 1:
+		print "Not enough memory to store model and 1 sample"
+		return results
+
+	print "maxSamplePerNode: " + str(maxSamplePerNode)
+	microBatch = math.pow(2,int(math.log(maxSamplePerNode,2)))
+	if g.FIX_MIRCO_BATCH == None:
+		g.FIX_MIRCO_BATCH = microBatch
+	else:
+		print "Use FIX_MIRCO_BATCH set by user, ", g.FIX_MIRCO_BATCH
+		microBatch = g.FIX_MIRCO_BATCH
+		
+	maxIdx = int(math.log(g.MAX_RANK,2))
 	for i in range(1,maxIdx+1):
 		nodeNumber = math.pow(2,i)
-		miniBatch = FIX_MIRCO_BATCH * nodeNumber
-		if (miniBatch <= MAX_MINIBATCH):
-			memPerNode = 2*(float(miniBatch)*(totalIn + totalOut)/nodeNumber + totalWeight)*BYTE_PER_ITEM
-			# if MEM_MODE == int(MEM_MODE_MIX):
-				# memPerNode = 2*(float(miniBatch)*(max(totalIn,totalOut))/nodeNumber + totalWeight)*BYTE_PER_ITEM
-			Tcomp = (TOTAL_SAMPLE/nodeNumber)*totalComp
-			
+
+		miniBatch = microBatch * nodeNumber
+		if (miniBatch <= g.MAX_MINIBATCH):
+			memPerNode = 2*(microBatch*(totalIn + totalOut) + totalWeight)*g.BYTE_PER_ITEM
+			Tcomp = math.ceil(g.TOTAL_SAMPLE/nodeNumber)*totalComp
 			bandwidth, latency = get_network_factor(platform,nodeNumber,ALGORITHM_RING)
 			alpha = latency
 			beta = 1/float(bandwidth)
-			#Communication the halo exchange. Only apply for CONV and POOLING (which has kernel size > 1)
-			# A GPU only need to communicate with its preceding and next GPUs along the ring except the first GPU and the last GPU (near the border of sample). Communication will be performed in 2 round in 2 directions clockwise and counter-clockwise along the ring so that no network conflict appear!!! 
-			# Secondly, we group the communication of B sample at the same time to reduce the latency. 
-			# The communication time can be estimated as the maximum communication of 1 GPU pair at each layer. 
-			# The size of each end-2-end is (K-1)|W|
-			Tcomm = 0
-			for i in range(0,len(network['lays'])):
-				kernelSize = network['lays']['w'][2] 
-				if (kernelSize > 1):
-					# Halo exchange the activation: halo(y)
-					haloSize = network['lays']['y'][1] * (kernelSize -1) * BYTE_PER_ITEM
-					Thalo = 2*(alpha + haloSize*beta)
-					
-					# Halo exchange the input gradient: halo(dL/dx)
-					haloSize = network['lays']['x'][1] * (kernelSize -1) * BYTE_PER_ITEM
-					Thalo = Thalo  + 2*(alpha + haloSize*beta)
-				Tcomm = Tcomm + Thalo
-			Tcomm = Tcomm * (TOTAL_SAMPLE/miniBatch)	
-			#Communication the weight at the end of each iteration
-			Tcomm = Tcomm  + 2*(TOTAL_SAMPLE/miniBatch)*(nodeNumber-1)*(alpha + totalWeight*BYTE_PER_ITEM*beta/nodeNumber)
-			result = {'name':'spatial','B':miniBatch,'p':nodeNumber,'mMem':memPerNode,'Tcomp':Tcomp,'Tcomm':Tcomm}
-			results.append(result)
-	print_result(results)
+			#print alpha,beta,nodeNumber, g.BYTE_PER_ITEM*totalWeight, math.ceil(g.TOTAL_SAMPLE/miniBatch)
+			#print (nodeNumber-1)*(alpha + totalWeight*g.BYTE_PER_ITEM*beta/nodeNumber)
+			Tcomm = 2 * math.ceil(g.TOTAL_SAMPLE/miniBatch)*(nodeNumber-1)*(alpha + totalWeight*g.BYTE_PER_ITEM*beta/nodeNumber)
+			#print Tcomm
+			#print "---------------"
+			result = {'name':'data','B':miniBatch,'p':nodeNumber,'mMem':memPerNode,'Tcomp':Tcomp,'Tcomm':Tcomm}
+			results.append(result)		
+	return results
 
-	# 4.4. Filter Paralllelism
-	# + For Filter and Channel, there are 2 cases
-	#Case 1: for given a number of GPU p, I use the same miniBatch size as they are in data parallelism with the same p. In that case, filter and channel always impossible because out-of-memory at each GPU
+def analysis_filter(network, platform, g, metaData, results):
+	# + For Filter and Channel, there are 3 cases
+	# Case 1: for given a number of GPU p, I use the same miniBatch size as they are in data parallelism with the same p. In that case, filter and channel always impossible because out-of-memory at each GPU
 	# Case 2: for a given a number of GPU p, I tried to find the biggest (power-of-2) miniBatch size  that the total memory can fit to the memory of GPU. I change p from 2 to the biggest number based on the constraints in Table II of our paper in overleaf.
+	# Case 3: Fix the mini BatchSize as set by user as the maxSampleperNode, increasing p...
 	print "==========FILTER PARALLELISM=========="
-	max_rank = min(MAX_RANK,minFilter)	
+	totalIn = metaData["totalIn"]
+	totalOut = metaData["totalOut"]
+	totalWeight = metaData["totalWeight"]
+	totalComp = metaData["totalComp"]
+	minFilter = metaData["minFilter"]	
+	
+	max_rank = min(g.MAX_RANK,minFilter)	
 	print "max_rank", max_rank
 	maxIdx = int(math.log(max_rank,2))
 	G = len(network['lays'])
 	totalOutExceptLast = totalOut - network['lays'][G-1]['out']
 	
-	#Case 1: Also fix batch per node = maxBatchPerNode of data.
+	#Case 1: Also fix batch per node = maxSamplePerNode of data.
 	for i in range(1,maxIdx+1):
 		nodeNumber = math.pow(2,i)
-		miniBatch = FIX_MIRCO_BATCH * nodeNumber
-		if (miniBatch <= MAX_MINIBATCH):
-			memPerNode = 2*(miniBatch*(totalIn + totalOut) + float(totalWeight)/nodeNumber)*BYTE_PER_ITEM
+		miniBatch = g.FIX_MIRCO_BATCH * nodeNumber
+		if (miniBatch <= g.MAX_MINIBATCH):
+			memPerNode = 2*(miniBatch*(totalIn + totalOut) + float(totalWeight)/nodeNumber)*g.BYTE_PER_ITEM
 			#print memPerNode, nodeNumber,miniBatch
-			if memPerNode > MEM_PER_NODE:
+			if memPerNode > g.MEM_PER_NODE:
 				print "Not enough memory to store model and",miniBatch ,"samples in Filter-Parallelism with",nodeNumber,"GPUs"
 				#break
 			else:
-				Tcomp = (TOTAL_SAMPLE/nodeNumber)*totalComp
+				Tcomp = math.ceil(g.TOTAL_SAMPLE/nodeNumber)*totalComp
 				bandwidth, latency = get_network_factor(platform,nodeNumber,ALGORITHM_RING)
 				alpha = latency
 				beta = 1/float(bandwidth)
 				
-				Tcomm = 3*(TOTAL_SAMPLE/miniBatch)*(nodeNumber-1)*(alpha*(G-1) + (miniBatch*totalOutExceptLast*BYTE_PER_ITEM*beta)/nodeNumber)
+				Tcomm = 3*math.ceil(g.TOTAL_SAMPLE/miniBatch)*(nodeNumber-1)*(alpha*(G-1) + (miniBatch*totalOutExceptLast*g.BYTE_PER_ITEM*beta)/nodeNumber)
 				print "Get result from Case 1 with miniBatch", miniBatch, "nodeNumber",nodeNumber
-				result = {'name':'filter','B':miniBatch,'p':nodeNumber,'mMem':memPerNode,'Tcomp':Tcomp,'Tcomm':Tcomm}
+				result = {'name':'filter1','B':miniBatch,'p':nodeNumber,'mMem':memPerNode,'Tcomp':Tcomp,'Tcomm':Tcomm}
 				results.append(result)	
 	
-	#Case 2: For each network size, use the biggest batch size
+	# #Case 2: For each network size, use the biggest batch size
 	for i in range(1,maxIdx+1):
 		nodeNumber = math.pow(2,i)	
-		maxMiniBatch = float(ITEM_PER_NODE/2 - float(totalWeight)/nodeNumber)/(totalIn + totalOut)
-		maxMiniBatch = min(maxMiniBatch,MAX_MINIBATCH)
+		maxMiniBatch = float(g.ITEM_PER_NODE/2 - float(totalWeight)/nodeNumber)/(totalIn + totalOut)
+		maxMiniBatch = min(maxMiniBatch,g.MAX_MINIBATCH)
 		miniBatch = math.pow(2,int(math.log(maxMiniBatch,2)))
-		memPerNode = 2*(miniBatch*(totalIn + totalOut) + float(totalWeight)/nodeNumber)*BYTE_PER_ITEM
-		Tcomp = (TOTAL_SAMPLE/nodeNumber)*totalComp
+		memPerNode = 2*(miniBatch*(totalIn + totalOut) + float(totalWeight)/nodeNumber)*g.BYTE_PER_ITEM
+		Tcomp = math.ceil(g.TOTAL_SAMPLE/nodeNumber)*totalComp
 		bandwidth, latency = get_network_factor(platform,nodeNumber,ALGORITHM_RING)
 		alpha = latency
 		beta = 1/float(bandwidth)
-		Tcomm = 3*(TOTAL_SAMPLE/miniBatch)*(nodeNumber-1)*(alpha*(G-1) + (miniBatch*totalOutExceptLast*BYTE_PER_ITEM*beta)/nodeNumber)
+		Tcomm = 3*math.ceil(g.TOTAL_SAMPLE/miniBatch)*(nodeNumber-1)*(alpha*(G-1) + (miniBatch*totalOutExceptLast*g.BYTE_PER_ITEM*beta)/nodeNumber)
 		print "Get result from Case 2 with miniBatch", miniBatch, "nodeNumber",nodeNumber
-		result = {'name':'filter','B':miniBatch,'p':nodeNumber,'mMem':memPerNode,'Tcomp':Tcomp,'Tcomm':Tcomm}
+		result = {'name':'filter2','B':miniBatch,'p':nodeNumber,'mMem':memPerNode,'Tcomp':Tcomp,'Tcomm':Tcomm}
 		results.append(result)
-	
-	# 4.5. Channel Paralllelism
-	print "==========Channel PARALLELISM=========="
-	max_rank = min(MAX_RANK,minChannel)	
-	print "max_rank", max_rank
-	maxIdx = int(math.log(max_rank,2))
-	
-	#Case 1: Also fix batch per node = maxBatchPerNode of data.
-	for i in range(1,maxIdx+1):
-		nodeNumber = math.pow(2,i)
-		miniBatch = FIX_MIRCO_BATCH * nodeNumber
-		if (miniBatch <= MAX_MINIBATCH):
-			memPerNode = 2*(miniBatch*(totalIn + totalOut) + float(totalWeight)/nodeNumber)*BYTE_PER_ITEM
-			#print memPerNode, nodeNumber,miniBatch
-			if memPerNode > MEM_PER_NODE:
-				print "Not enough memory to store model and",miniBatch ,"samples in Channel-Parallelism with",nodeNumber,"GPUs"
+
+	#Case 3: Also fix batch per node = maxSamplePerNode or by user setting	
+	maxSamplePerNode = float(g.ITEM_PER_NODE - 2*totalWeight)/(totalIn + totalOut)
+	if maxSamplePerNode < 1:
+		print "Not enough memory to store model and 1 sample"
+		return results
+
+	print "maxSamplePerNode: " + str(maxSamplePerNode)
+	miniBatch = math.pow(2,int(math.log(maxSamplePerNode,2)))
+	if g.FIX_MIRCO_BATCH is not  None:
+		print "Use FIX_MIRCO_BATCH set by user, ", g.FIX_MIRCO_BATCH
+		miniBatch = g.FIX_MIRCO_BATCH
+		
+	if (miniBatch <= g.MAX_MINIBATCH):
+		for i in range(1,maxIdx+1):
+			nodeNumber = math.pow(2,i)		
+			memPerNode = 2*(miniBatch*(totalIn + totalOut) + float(totalWeight)/nodeNumber)*g.BYTE_PER_ITEM
+			if memPerNode > g.MEM_PER_NODE:
+				print "Not enough memory to store model and",miniBatch ,"samples in Filter-Parallelism with",nodeNumber,"GPUs"
 				#break
 			else:
-				Tcomp = (TOTAL_SAMPLE/nodeNumber)*totalComp
+				Tcomp = math.ceil(g.TOTAL_SAMPLE/nodeNumber)*totalComp
 				bandwidth, latency = get_network_factor(platform,nodeNumber,ALGORITHM_RING)
 				alpha = latency
 				beta = 1/float(bandwidth)
-				Tcomm = 3*(TOTAL_SAMPLE/miniBatch)*(nodeNumber-1)*(alpha*(G-1) + (miniBatch*totalOutExceptLast*BYTE_PER_ITEM*beta)/nodeNumber)
+				
+				Tcomm = 3* math.ceil(g.TOTAL_SAMPLE/miniBatch)*(nodeNumber-1)*(alpha*(G-1) + (miniBatch*totalOutExceptLast*g.BYTE_PER_ITEM*beta)/nodeNumber)
+				print "Get result from Case 3 with miniBatch", miniBatch, "nodeNumber",nodeNumber
+				result = {'name':'filter3','B':miniBatch,'p':nodeNumber,'mMem':memPerNode,'Tcomp':Tcomp,'Tcomm':Tcomm}
+				results.append(result)	
+
+def analysis_channel(network, platform, g, metaData, results):
+	# + For Filter and Channel, there are 3 cases
+	# Case 1: for given a number of GPU p, I use the same miniBatch size as they are in data parallelism with the same p. In that case, filter and channel always impossible because out-of-memory at each GPU
+	# Case 2: for a given a number of GPU p, I tried to find the biggest (power-of-2) miniBatch size  that the total memory can fit to the memory of GPU. I change p from 2 to the biggest number based on the constraints in Table II of our paper in overleaf.
+	# Case 3: Fix the mini BatchSize as set by user as the maxSampleperNode, increasing p...
+	print "==========Channel PARALLELISM=========="
+	totalIn = metaData["totalIn"]
+	totalOut = metaData["totalOut"]
+	totalWeight = metaData["totalWeight"]
+	totalComp = metaData["totalComp"]
+	minChannel = metaData["minChannel"]	
+	
+	max_rank = min(g.MAX_RANK,minChannel)	
+	print "max_rank", max_rank
+	maxIdx = int(math.log(max_rank,2))
+	print maxIdx
+	G = len(network['lays'])
+	totalOutExceptLast = totalOut - network['lays'][G-1]['out']
+	
+	nodeRange = []
+	for i in range(1,maxIdx+1):
+		nodeRange.append(math.pow(2,i))
+	if max_rank not in nodeRange:
+		nodeRange.append(max_rank)
+	#Case 1: Also fix batch per node = maxSamplePerNode of data.
+	for nodeNumber in nodeRange:
+		#nodeNumber = math.pow(2,i)
+		miniBatch = g.FIX_MIRCO_BATCH * nodeNumber
+		if (miniBatch <= g.MAX_MINIBATCH):
+			memPerNode = 2*(miniBatch*(totalIn + totalOut) + float(totalWeight)/nodeNumber)*g.BYTE_PER_ITEM
+			#print memPerNode, nodeNumber,miniBatch
+			if memPerNode > g.MEM_PER_NODE:
+				print "Not enough memory to store model and",miniBatch ,"samples in Channel-Parallelism with",nodeNumber,"GPUs"
+				#break
+			else:
+				Tcomp = math.ceil(g.TOTAL_SAMPLE/nodeNumber)*totalComp
+				bandwidth, latency = get_network_factor(platform,nodeNumber,ALGORITHM_RING)
+				alpha = latency
+				beta = 1/float(bandwidth)
+				Tcomm = 3*math.ceil(g.TOTAL_SAMPLE/miniBatch)*(nodeNumber-1)*(alpha*(G-1) + (miniBatch*totalOutExceptLast*g.BYTE_PER_ITEM*beta)/nodeNumber)
 				print "Get result from Case 1 with miniBatch", miniBatch, "nodeNumber",nodeNumber
-				result = {'name':'channel','B':miniBatch,'p':nodeNumber,'mMem':memPerNode,'Tcomp':Tcomp,'Tcomm':Tcomm}
+				result = {'name':'chan1','B':miniBatch,'p':nodeNumber,'mMem':memPerNode,'Tcomp':Tcomp,'Tcomm':Tcomm}
 				results.append(result)
 		
 	#Case 2: For each network size, use the biggest batch size
-	for i in range(1,maxIdx+1):
-		nodeNumber = math.pow(2,i)	
-		maxMiniBatch = float(ITEM_PER_NODE/2 - float(totalWeight)/nodeNumber)/(totalIn + totalOut)
-		maxMiniBatch = min(maxMiniBatch,MAX_MINIBATCH)
+	for nodeNumber in nodeRange:
+		#nodeNumber = math.pow(2,i)	
+		maxMiniBatch = float(g.ITEM_PER_NODE/2 - float(totalWeight)/nodeNumber)/(totalIn + totalOut)
+		maxMiniBatch = min(maxMiniBatch,g.MAX_MINIBATCH)
 		miniBatch = math.pow(2,int(math.log(maxMiniBatch,2)))
-		memPerNode = 2*(miniBatch*(totalIn + totalOut) + float(totalWeight)/nodeNumber)*BYTE_PER_ITEM
-		Tcomp = (TOTAL_SAMPLE/nodeNumber)*totalComp
+		memPerNode = 2*(miniBatch*(totalIn + totalOut) + float(totalWeight)/nodeNumber)*g.BYTE_PER_ITEM
+		Tcomp = math.ceil(g.TOTAL_SAMPLE/nodeNumber)*totalComp
 		bandwidth, latency = get_network_factor(platform,nodeNumber,ALGORITHM_RING)
 		alpha = latency
 		beta = 1/float(bandwidth)
-		Tcomm = 3*(TOTAL_SAMPLE/miniBatch)*(nodeNumber-1)*(alpha*(G-1) + (miniBatch*totalOutExceptLast*BYTE_PER_ITEM*beta)/nodeNumber)
+		Tcomm = 3*math.ceil(g.TOTAL_SAMPLE/miniBatch)*(nodeNumber-1)*(alpha*(G-1) + (miniBatch*totalOutExceptLast*g.BYTE_PER_ITEM*beta)/nodeNumber)
 		print "Get result from Case 2 with miniBatch", miniBatch, "nodeNumber",nodeNumber
-		result = {'name':'channel','B':miniBatch,'p':nodeNumber,'mMem':memPerNode,'Tcomp':Tcomp,'Tcomm':Tcomm}
+		result = {'name':'chan2','B':miniBatch,'p':nodeNumber,'mMem':memPerNode,'Tcomp':Tcomp,'Tcomm':Tcomm}
 		results.append(result)
+
+	#Case 3: Also fix batch per node = maxSamplePerNode or by user setting	
+	maxSamplePerNode = float(g.ITEM_PER_NODE - 2*totalWeight)/(totalIn + totalOut)
+	if maxSamplePerNode < 1:
+		print "Not enough memory to store model and 1 sample"
+		return results
+
+	print "maxSamplePerNode: " + str(maxSamplePerNode)
+	miniBatch = math.pow(2,int(math.log(maxSamplePerNode,2)))
+	if g.FIX_MIRCO_BATCH is not  None:
+		print "Use FIX_MIRCO_BATCH set by user, ", g.FIX_MIRCO_BATCH
+		miniBatch = g.FIX_MIRCO_BATCH
 	
-	# 4.6 Pipeline Paralllelism and vModel
+	if (miniBatch <= g.MAX_MINIBATCH):
+		for nodeNumber in nodeRange:
+			#nodeNumber = math.pow(2,i)	
+			memPerNode = 2*(miniBatch*(totalIn + totalOut) + float(totalWeight)/nodeNumber)*g.BYTE_PER_ITEM
+			#print memPerNode, nodeNumber,miniBatch
+			if memPerNode > g.MEM_PER_NODE:
+				print "Not enough memory to store model and",miniBatch ,"samples in Channel-Parallelism with",nodeNumber,"GPUs"
+				#break
+			else:
+				Tcomp = math.ceil(g.TOTAL_SAMPLE/nodeNumber)*totalComp
+				bandwidth, latency = get_network_factor(platform,nodeNumber,ALGORITHM_RING)
+				alpha = latency
+				beta = 1/float(bandwidth)
+				Tcomm = 3*math.ceil(g.TOTAL_SAMPLE/miniBatch)*(nodeNumber-1)*(alpha*(G-1) + (miniBatch*totalOutExceptLast*g.BYTE_PER_ITEM*beta)/nodeNumber)
+				print "Get result from Case 3 with miniBatch", miniBatch, "nodeNumber",nodeNumber
+				result = {'name':'chan3','B':miniBatch,'p':nodeNumber,'mMem':memPerNode,'Tcomp':Tcomp,'Tcomm':Tcomm}
+				results.append(result)
+
+def analysis_spatial(network, platform, g, metaData, results):
+	# For weak scaling,  use the same miniBatch size as they are set by user
+	# Only seperate the |W| dimension
+	# To increase the scaling, split of some begining layers. 
+	# The following layer work as sequential. They agregated value by perform an Allgather.
+	print "==========SPATIAL PARALLELISM=========="
+	splitLayerIdx = 0  # 1st layer in 1st parition. other in the 2nd partition
+	##TODO: detect the best spliting
+	if "AlexNet" in network['name']:
+		splitLayerIdx = 12
+	if "VGG16" in network['name']:
+		splitLayerIdx = 30
+	if "ResNet50" in network['name']:
+		splitLayerIdx = 164
+	if "CosmoFlow" in network['name']:
+		splitLayerIdx = 5		
+	
+	totalWeight = metaData["totalWeight"]		
+	minW = network['lays'][0]['x'][1]
+	for i in range(0,splitLayerIdx + 1):
+		layer = network['lays'][i]
+		minW = min(minW,layer['x'][1])
+		minW = min(minW,layer['y'][1])
+	max_rank = min(g.MAX_RANK,minW)	
+	print "max_rank", max_rank
+	
+	maxIdx = int(math.log(max_rank,2))
+	for i in range(1,maxIdx+1):
+		nodeNumber = math.pow(2,i)
+		totalIn = 0
+		totalOut = 0
+		totalComp = 0
+		for i in range(0,splitLayerIdx + 1):
+			totalOut = totalOut + math.ceil(float(layer['out']) / nodeNumber)
+			totalIn = totalIn + math.ceil(float(layer['in']) / nodeNumber)
+			totalComp = totalComp + float(layer['comp']) / nodeNumber
+		
+		for i in range(maxIdx+1,len(network['lays'])):
+			totalOut = totalOut + layer['out']
+			totalIn = totalIn + layer['in']
+			totalComp = totalComp + layer['comp']
+			
+		maxSamplePerNode = float(g.ITEM_PER_NODE - 2*totalWeight)/(totalIn + totalOut)
+		if maxSamplePerNode < 1:
+			print "Not enough memory to store model and 1 sample when split into", nodeNumber, "at layer",splitLayerIdx
+			continue
+		else:
+			print "maxSamplePerNode: " + str(maxSamplePerNode)
+			miniBatch = math.pow(2,int(math.log(maxSamplePerNode,2)))
+			if g.FIX_MIRCO_BATCH is not None:
+				print "Use FIX_MIRCO_BATCH set by user, ", g.FIX_MIRCO_BATCH
+				miniBatch = g.FIX_MIRCO_BATCH
+	
+
+			if (miniBatch <= g.MAX_MINIBATCH):
+				memPerNode = 2*(float(miniBatch)*(totalIn + totalOut)/nodeNumber + totalWeight)*g.BYTE_PER_ITEM
+				print nodeNumber, totalComp
+				Tcomp = math.ceil(g.TOTAL_SAMPLE)*totalComp
+				
+				bandwidth, latency = get_network_factor(platform,nodeNumber,ALGORITHM_RING)
+				alpha = latency
+				beta = 1/float(bandwidth)
+				#Communication the halo exchange. Only apply for CONV and POOLING (which has kernel size > 1)
+				# A GPU only need to communicate with its preceding and next GPUs along the ring except the first GPU and the last GPU (near the border of sample). Communication will be performed in 2 round in 2 directions clockwise and counter-clockwise along the ring so that no network conflict appear!!! 
+				# Secondly, we group the communication of B sample at the same time to reduce the latency. 
+				# The communication time can be estimated as the maximum communication of 1 GPU pair at each layer. 
+				# The size of each end-2-end is (K-1)/2|W|
+				Tcomm = 0
+				for i in range(0,splitLayerIdx + 1):
+					kernelSize = network['lays'][i]['w'][2] 
+					if (kernelSize > 1):
+						# Halo exchange the activation: halo(y)
+						haloSize = network['lays'][i]['y'][1] * ((kernelSize -1)/2) * g.BYTE_PER_ITEM
+						Thalo = 2*(alpha + haloSize*beta)
+						
+						# Halo exchange the input gradient: halo(dL/dx)
+						haloSize = network['lays'][i]['x'][1] * ((kernelSize -1)/2) * g.BYTE_PER_ITEM
+						Thalo = Thalo  + 2*(alpha + haloSize*beta)
+					Tcomm = Tcomm + Thalo
+				#Algather communication |y| at the begining of the 2nd partition (in the forward pass)
+				#Scatter communication the input gradient  ==> factor of 2
+				totalOutatSplit = float(network['lays'][splitLayerIdx]['out'])
+				Tcomm = Tcomm + 2*(nodeNumber-1)*(alpha + (miniBatch*totalOutatSplit*g.BYTE_PER_ITEM*beta)/nodeNumber)
+				Tcomm = Tcomm * math.ceil(g.TOTAL_SAMPLE/miniBatch)
+				
+				#Communication the weight at the end of each iteration
+				Tcomm = Tcomm  + 2*(g.TOTAL_SAMPLE/miniBatch)*(nodeNumber-1)*(alpha + totalWeight*g.BYTE_PER_ITEM*beta/nodeNumber)
+				result = {'name':'spatial','B':miniBatch,'p':nodeNumber,'mMem':memPerNode,'Tcomp':Tcomp,'Tcomm':Tcomm}
+				results.append(result)
+
+def analysis_pipeline(network, platform, g, metaData, results):
+	return
+	### TODO: Not yet finished revising
 	# Case 1: Fix S = p then scale like parallelism. Fix batch per node .... 
 	# Case 2: Choose S < p MiniBatch = S*micro_batch
 	print "==========VModel and Pipeline PARALLELISM=========="
@@ -423,7 +661,10 @@ def main(args):
 		# TODO
 	print_result(results)
 	return
-	# 4.7 Filter + Data Parallelism
+	
+def analysis_hybrid_df(network, platform, g, metaData, results):
+	return
+	# TODO: Not yet finished revising
 	# In this case, Filter for inside group (1 node = 4GPUs) P2 = 4
 	# Data for inter groups (scale...) So that Mini Batch = micro batch * p/4
 	print "==========DATA + FILTER PARALLELISM=========="
@@ -493,73 +734,7 @@ def main(args):
 				results.append(result)
 	print_result(results)
 
-def analysis_sequential(network, g, metaData, results):
-	print "==========SINGLE-NODE==============="
-	totalIn = metaData["totalIn"]
-	totalOut = metaData["totalOut"]
-	totalWeight = metaData["totalWeight"]
-	totalComp = metaData["totalComp"]
 	
-	maxSamplePerNode = float(g.ITEM_PER_NODE - 2*totalWeight)/(totalIn + totalOut)
-	if maxSamplePerNode < 1:
-		print "Not enough memory to store model and 1 sample"
-		return results
-		
-	print "maxSamplePerNode: " + str(maxSamplePerNode)
-	# mem4Sample = 2*(1*(totalIn + totalOut) + totalWeight)*BYTE_PER_ITEM
-	# print "mem4Sample: " + str(mem4Sample)
-	
-	miniBatch = math.pow(2,int(math.log(maxSamplePerNode,2)))
-	if g.FIX_MIRCO_BATCH is not None:
-		print "Use FIX_MIRCO_BATCH set by user for miniBatch: ", g.FIX_MIRCO_BATCH
-		miniBatch = g.FIX_MIRCO_BATCH
-	
-	memPerNode = 2*g.BYTE_PER_ITEM*(miniBatch*(totalOut + totalIn) + totalWeight)
-	Tcomp = g.TOTAL_SAMPLE*totalComp
-	Tcomm = 0
-	nodeNumber = 1
-	result = {'name':'single','B':miniBatch,'p':nodeNumber,'mMem':memPerNode,'Tcomp':Tcomp,'Tcomm':Tcomm}
-	results.append(result)
-	return results
-
-def analysis_data(network, platform, g, metaData, results):
-	#+ For data parallelism, find the biggest micro-batch size (samples per GPU), e.g., 512 in case of ALEXNET, 16 in case of VGG. Then I tried all the case whenever (p <= maxP) and (miniBatch <= maxB ). maxP and maxB are parameter passed by users. For example set maxP = 2048 and maxB =4096, respectively
-	print "==========DATA PARALLELISM=========="
-	totalIn = metaData["totalIn"]
-	totalOut = metaData["totalOut"]
-	totalWeight = metaData["totalWeight"]
-	totalComp = metaData["totalComp"]
-
-	maxSamplePerNode = float(g.ITEM_PER_NODE - 2*totalWeight)/(totalIn + totalOut)
-	if maxSamplePerNode < 1:
-		print "Not enough memory to store model and 1 sample"
-		return results
-
-	print "maxSamplePerNode: " + str(maxSamplePerNode)
-	microBatch = math.pow(2,int(math.log(maxSamplePerNode,2)))
-	if g.FIX_MIRCO_BATCH == None:
-		g.FIX_MIRCO_BATCH = microBatch
-	else:
-		print "Use FIX_MIRCO_BATCH set by user, ", g.FIX_MIRCO_BATCH
-		microBatch = g.FIX_MIRCO_BATCH
-		
-	maxIdx = int(math.log(g.MAX_RANK,2))
-	for i in range(1,maxIdx+1):
-		nodeNumber = math.pow(2,i)
-
-		miniBatch = microBatch * nodeNumber
-		if (miniBatch <= g.MAX_MINIBATCH):
-			memPerNode = 2*(microBatch*(totalIn + totalOut) + totalWeight)*g.BYTE_PER_ITEM
-			Tcomp = (g.TOTAL_SAMPLE/nodeNumber)*totalComp
-			bandwidth, latency = get_network_factor(platform,nodeNumber,ALGORITHM_RING)
-			alpha = latency
-			beta = 1/float(bandwidth)
-			Tcomm = 2*(g.TOTAL_SAMPLE/miniBatch)*(nodeNumber-1)*(alpha + totalWeight*g.BYTE_PER_ITEM*beta/nodeNumber)
-			result = {'name':'data','B':miniBatch,'p':nodeNumber,'mMem':memPerNode,'Tcomp':Tcomp,'Tcomm':Tcomm}
-			results.append(result)		
-	return results
-
-
 #################################################################
 # This version is only support for ABCI and ring-based algorithms
 # In this example, generate the topology like ABCI. 
@@ -584,7 +759,7 @@ INTRA_SWITCH_LAT = 0 # second. It should be > 0 but very small
 INTRA_CALBE_LAT = 9E-6# second ~ use 1 hop end-2-end latency...
 PLX_LAT = 110E-9 #second. PLX Switch latency
 # https://arxiv.org/abs/1903.04611
-PLX_CABLE_LAT = 15E-6/2 # 15us GPU-to-GPU ~~> GPU-to-PLX become 0.5x
+PLX_CABLE_LAT = 15E-6 # 15us GPU-to-GPU ~~> GPU-to-PLX become 0.5x but let use it.
 #PLX_CABLE_LAT = 110E-9 #15E-6/2 # 15us GPU-to-GPU ~~> GPU-to-PLX become 0.5x
 PLX_BW = 16E9 #Byte per second
 
@@ -596,6 +771,7 @@ INTER_SWITCH_LAT_FBB = INTER_SWITCH_LAT_LEAF
 INTER_SWITCH_LAT_SPINE = 400E-9 #second # 400ns (http://www.mellanox.com/related-docs/prod_ib_switch_systems/pb_cs7500.pdf)
 CABLE_LENGTH = 0 # meter. Assume no cable length in this work
 CALBE_LAT = CABLE_LENGTH * 5.2E-9 #Speed of light in glass= 190000km/sec ==> 1/19.000.000.000 = 5.2E-9 s/m
+
 def get_network_factor(plat,rank, algorithm):
 	# TODO: Real implementation for generic system. 
 	#################################################################
@@ -612,12 +788,20 @@ def get_network_factor(plat,rank, algorithm):
 		latency  = INTRA_SWITCH_LAT + INTRA_CALBE_LAT
 	elif (rank <= 68):
 		bandwidth = min(INTER_LINK_BW,INTRA_LINK_BW)
+		CABLE_LENGTH = 5 #5 meter for intra-rack cable length
+		#CALBE_LAT = CABLE_LENGTH * 5.2E-9
+		# Below factor of 2 for send and receiver node. 
+		# Another factor of two is due to intra-node architecture of ABCI node. It need go through PCIe link 3 times and 1 PLX switch
 		latency = max(INTRA_SWITCH_LAT + INTRA_CALBE_LAT, 2*(PLX_CABLE_LAT+PLX_LAT) +  INTER_SWITCH_LAT_LEAF + 2*CALBE_LAT)
 	elif (rank <=136):
 		bandwidth = min(INTER_LINK_BW,INTRA_LINK_BW)
+		CABLE_LENGTH = 5 #5 meter for intra-rack cable length
+		#CALBE_LAT = CABLE_LENGTH * 5.2E-9
 		latency = max(INTRA_SWITCH_LAT + INTRA_CALBE_LAT, 2*(PLX_CABLE_LAT+PLX_LAT) + INTER_SWITCH_LAT_FBB + 2*INTER_SWITCH_LAT_LEAF + 4*CALBE_LAT)
 	else:
 		bandwidth = min(INTER_LINK_BW,INTRA_LINK_BW)
+		CABLE_LENGTH = 20 #100 meter for inter-rack cable length
+		#CALBE_LAT = CABLE_LENGTH * 5.2E-9
 		latency = max(INTRA_SWITCH_LAT + INTRA_CALBE_LAT, 2*(PLX_CABLE_LAT+PLX_LAT) + INTER_SWITCH_LAT_SPINE + 2*INTER_SWITCH_LAT_FBB + 2*INTER_SWITCH_LAT_LEAF + 6*CALBE_LAT)
 	return bandwidth,latency
 	
@@ -868,6 +1052,7 @@ def summary_network2(nw, debug):
 		totalWeight = totalWeight + layer['weight']
 		totalComp = totalComp + layer['comp']
 	if debug == True:
+		print "Model with", str(len(nw['lays'])), "layers"
 		print "Total |x|: " + str(totalIn) + " items"
 		print "Total |y|: " + str(totalOut) + " items"
 		print "Total |w|: " + str(totalWeight) + " items"
@@ -883,7 +1068,7 @@ def print_network_all(nw):
 	print "LAYER\t x[C,W,H] \t w[C,F,K,K] \t y[F,W,H] \t TComp"
 	for i in range(0,len(nw['lays'])):
 		layer = nw['lays'][i]
-		print layer['name'],"\t",layer['x'],"=",layer['in'],"\t",layer['w'],"=",layer['weight'],"\t",layer['y'],"=",layer['out'],"\t",layer['comp']	
+		print i, layer['name'],"\t",layer['x'],"=",layer['in'],"\t",layer['w'],"=",layer['weight'],"\t",layer['y'],"=",layer['out'],"\t",layer['comp']	
 	
 def print_network(nw):
 	print "===================================="
