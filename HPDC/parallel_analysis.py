@@ -218,7 +218,7 @@ def analysis_sequential(network, g, metaData, results):
 	totalWeight = metaData["totalWeight"]
 	totalComp = metaData["totalComp"]
 	
-	maxSamplePerNode = float(g.ITEM_PER_NODE - 2*totalWeight)/(totalIn + totalOut)
+	maxSamplePerNode = float(g.ITEM_PER_NODE/2 - totalWeight)/(totalIn + totalOut)
 	if maxSamplePerNode < 1:
 		print "Not enough memory to store model and 1 sample"
 		return results
@@ -248,7 +248,7 @@ def analysis_data(network, platform, g, metaData, results):
 	totalWeight = metaData["totalWeight"]
 	totalComp = metaData["totalComp"]
 
-	maxSamplePerNode = float(g.ITEM_PER_NODE - 2*totalWeight)/(totalIn + totalOut)
+	maxSamplePerNode = float(g.ITEM_PER_NODE/2 - totalWeight)/(totalIn + totalOut)
 	if maxSamplePerNode < 1:
 		print "Not enough memory to store model and 1 sample"
 		return results
@@ -267,6 +267,7 @@ def analysis_data(network, platform, g, metaData, results):
 
 		miniBatch = microBatch * nodeNumber
 		if (miniBatch <= g.MAX_MINIBATCH):
+			print microBatch, (totalIn + totalOut), totalWeight, g.BYTE_PER_ITEM
 			memPerNode = 2*(microBatch*(totalIn + totalOut) + totalWeight)*g.BYTE_PER_ITEM
 			Tcomp = math.ceil(g.TOTAL_SAMPLE/nodeNumber)*totalComp
 			bandwidth, latency = get_network_factor(platform,nodeNumber,ALGORITHM_RING)
@@ -337,7 +338,7 @@ def analysis_filter(network, platform, g, metaData, results):
 		results.append(result)
 
 	#Case 3: Also fix batch per node = maxSamplePerNode or by user setting	
-	maxSamplePerNode = float(g.ITEM_PER_NODE - 2*totalWeight)/(totalIn + totalOut)
+	maxSamplePerNode = float(g.ITEM_PER_NODE/2 - float(totalWeight)/nodeNumber)/(totalIn + totalOut)
 	if maxSamplePerNode < 1:
 		print "Not enough memory to store model and 1 sample"
 		return results
@@ -427,7 +428,7 @@ def analysis_channel(network, platform, g, metaData, results):
 		results.append(result)
 
 	#Case 3: Also fix batch per node = maxSamplePerNode or by user setting	
-	maxSamplePerNode = float(g.ITEM_PER_NODE - 2*totalWeight)/(totalIn + totalOut)
+	maxSamplePerNode = float(g.ITEM_PER_NODE/2 - float(totalWeight)/nodeNumber)/(totalIn + totalOut)
 	if maxSamplePerNode < 1:
 		print "Not enough memory to store model and 1 sample"
 		return results
@@ -489,8 +490,8 @@ def analysis_spatial(network, platform, g, metaData, results):
 		totalOut = 0
 		totalComp = 0
 		for i in range(0,splitLayerIdx + 1):
-			totalOut = totalOut + math.ceil(float(layer['out']) / nodeNumber)
-			totalIn = totalIn + math.ceil(float(layer['in']) / nodeNumber)
+			totalOut = totalOut + math.ceil(float(layer['out']) / nodeNumber)	#only divide by p for some begining layer
+			totalIn = totalIn + math.ceil(float(layer['in']) / nodeNumber)		
 			totalComp = totalComp + float(layer['comp']) / nodeNumber
 		
 		for i in range(splitLayerIdx+1,len(network['lays'])):
@@ -498,7 +499,7 @@ def analysis_spatial(network, platform, g, metaData, results):
 			totalIn = totalIn + layer['in']
 			totalComp = totalComp + layer['comp']
 			
-		maxSamplePerNode = float(g.ITEM_PER_NODE - 2*totalWeight)/(totalIn + totalOut)
+		maxSamplePerNode = float(g.ITEM_PER_NODE/2 - totalWeight)/(totalIn + totalOut)
 		if maxSamplePerNode < 1:
 			print "Not enough memory to store model and 1 sample when split into", nodeNumber, "at layer",splitLayerIdx
 			continue
@@ -511,7 +512,7 @@ def analysis_spatial(network, platform, g, metaData, results):
 	
 
 			if (miniBatch <= g.MAX_MINIBATCH):
-				memPerNode = 2*(float(miniBatch)*(totalIn + totalOut)/nodeNumber + totalWeight)*g.BYTE_PER_ITEM
+				memPerNode = 2*(float(miniBatch)*(totalIn + totalOut) + totalWeight)*g.BYTE_PER_ITEM  #(x + y)/ p but already divided by p 
 				print nodeNumber, totalComp
 				Tcomp = math.ceil(g.TOTAL_SAMPLE)*totalComp
 				
@@ -749,7 +750,7 @@ def analysis_hybrid_ds(network, platform, g, metaData, results):
 	totalOut = 0
 	totalComp = 0
 	for i in range(0,splitLayerIdx + 1):
-		totalOut = totalOut + math.ceil(float(layer['out']) / P2)
+		totalOut = totalOut + math.ceil(float(layer['out']) / P2) #only divide by p2 for some begining layer
 		totalIn = totalIn + math.ceil(float(layer['in']) / P2)
 		totalComp = totalComp + float(layer['comp']) / P2
 	
@@ -758,7 +759,7 @@ def analysis_hybrid_ds(network, platform, g, metaData, results):
 		totalIn = totalIn + layer['in']
 		totalComp = totalComp + layer['comp']
 
-	maxSamplePerNode = float(g.ITEM_PER_NODE - 2*totalWeight)/(totalIn + totalOut)
+	maxSamplePerNode = float(g.ITEM_PER_NODE/2 - totalWeight)/(totalIn + totalOut)
 	if maxSamplePerNode < 1:
 		print "Not enough memory to store model and 1 sample when split into", nodeNumber, "at layer",splitLayerIdx
 		return
@@ -776,7 +777,7 @@ def analysis_hybrid_ds(network, platform, g, metaData, results):
 		miniBatch = maxSamplePerNode *P1
 
 		if (miniBatch <= g.MAX_MINIBATCH) and (nodeNumber >= P2):
-			memPerNode = 2*(float(miniBatch)*(totalIn + totalOut)/nodeNumber + totalWeight)*g.BYTE_PER_ITEM
+			memPerNode = 2*(float(miniBatch)*(totalIn + totalOut)/P1 + totalWeight)*g.BYTE_PER_ITEM  #(x + y)/(p1*p2) but already divided by p2 
 			print nodeNumber, totalComp
 			Tcomp = math.ceil(g.TOTAL_SAMPLE / P1)*totalComp
 			

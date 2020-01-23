@@ -1,0 +1,409 @@
+ ############################ ALEXNET #################################
+#######################################################
+-net ./ALEXNET_ImageNet_prof.net -plat ABCI.plat -goal 1 --paratype ['d']
+--cmaxB 262144.0 --cmaxp 4.0 --cBon 32.0
+====================================
+Read platform from  ABCI.plat
+====================================
+Read dataset and DNN from  ./ALEXNET_ImageNet_prof.net
+==========DATA PARALLELISM==========
+maxSamplePerNode: 1132.35276269
+Use FIX_MIRCO_BATCH set by user,  32.0
+32.0 1711156 62367776 4.0
+32.0 1711156 62367776 4.0
+==================SUMMARY==================
+name		B	p	Mem (bytes)	Tcomp (s)	Tcomm(s)	Time(s)	Cost(min*Node)
+data		64.0	2.0	936998144.0	2477.9456	100.1484416	2578.0940416	86.0
+data		128.0	4.0	936998144.0	1238.9728	75.3813312	1314.3541312	88.0
+#######################################################
+-net ./ALEXNET_ImageNet_prof.net -plat ABCI.plat -goal 1 --paratype ['d']
+--cmaxB 262144.0 --cmaxp 4.0 --cBon 64.0
+====================================
+Read platform from  ABCI.plat
+====================================
+Read dataset and DNN from  ./ALEXNET_ImageNet_prof.net
+==========DATA PARALLELISM==========
+maxSamplePerNode: 1132.35276269
+Use FIX_MIRCO_BATCH set by user,  64.0
+64.0 1711156 62367776 4.0
+64.0 1711156 62367776 4.0
+==================SUMMARY==================
+name		B	p	Mem (bytes)	Tcomp (s)	Tcomm(s)	Time(s)	Cost(min*Node)
+data		128.0	2.0	1375054080.0	2477.9456	50.0742208	2528.0198208	86.0
+data		256.0	4.0	1375054080.0	1238.9728	37.6906656	1276.6634656	88.0
+#######################################################
+-net ./ALEXNET_ImageNet_prof.net -plat ABCI.plat -goal 1 --paratype ['d']
+--cmaxB 262144.0 --cmaxp 4.0 --cBon 128.0
+====================================
+Read platform from  ABCI.plat
+====================================
+Read dataset and DNN from  ./ALEXNET_ImageNet_prof.net
+==========DATA PARALLELISM==========
+maxSamplePerNode: 1132.35276269
+Use FIX_MIRCO_BATCH set by user,  128.0
+128.0 1711156 62367776 4.0
+128.0 1711156 62367776 4.0
+==================SUMMARY==================
+name		B	p	Mem (bytes)	Tcomp (s)	Tcomm(s)	Time(s)	Cost(min*Node)
+data		256.0	2.0	2251165952.0	2477.9456	25.0371104	2502.9827104	84.0
+data		512.0	4.0	2251165952.0	1238.9728	18.8453328	1257.8181328	84.0
+#######################################################
+-net ./ALEXNET_ImageNet_prof.net -plat ABCI.plat -goal 1 --paratype ['d']
+--cmaxB 262144.0 --cmaxp 4.0 --cBon 256.0
+====================================
+Read platform from  ABCI.plat
+====================================
+Read dataset and DNN from  ./ALEXNET_ImageNet_prof.net
+==========DATA PARALLELISM==========
+maxSamplePerNode: 1132.35276269
+Use FIX_MIRCO_BATCH set by user,  256.0
+256.0 1711156 62367776 4.0
+256.0 1711156 62367776 4.0
+==================SUMMARY==================
+name		B	p	Mem (bytes)	Tcomp (s)	Tcomm(s)	Time(s)	Cost(min*Node)
+data		512.0	2.0	4003389696.0	2477.9456	12.5185552	2490.4641552	84.0
+data		1024.0	4.0	4003389696.0	1238.9728	9.4226664	1248.3954664	84.0
+#######################################################
+-net ./ALEXNET_ImageNet_prof.net -plat ABCI.plat -goal 1 --paratype ['d']
+--cmaxB 262144.0 --cmaxp 4.0 --cBon 512.0
+====================================
+Read platform from  ABCI.plat
+====================================
+Read dataset and DNN from  ./ALEXNET_ImageNet_prof.net
+==========DATA PARALLELISM==========
+maxSamplePerNode: 1132.35276269
+Use FIX_MIRCO_BATCH set by user,  512.0
+512.0 1711156 62367776 4.0
+512.0 1711156 62367776 4.0
+==================SUMMARY==================
+name		B	p	Mem (bytes)	Tcomp (s)	Tcomm(s)	Time(s)	Cost(min*Node)
+data		1024.0	2.0	7507837184.0	2477.9456	6.2592776	2484.2048776	84.0
+data		2048.0	4.0	7507837184.0	1238.9728	4.7113332	1243.6841332	84.0
+#######################################################
+-net ./ALEXNET_ImageNet_prof.net -plat ABCI.plat -goal 1 --paratype ['d']
+--cmaxB 262144.0 --cmaxp 4.0 --cBon 1024.0
+====================================
+Read platform from  ABCI.plat
+====================================
+Read dataset and DNN from  ./ALEXNET_ImageNet_prof.net
+==========DATA PARALLELISM==========
+maxSamplePerNode: 1132.35276269
+Use FIX_MIRCO_BATCH set by user,  1024.0
+1024.0 1711156 62367776 4.0
+1024.0 1711156 62367776 4.0
+==================SUMMARY==================
+name		B	p	Mem (bytes)	Tcomp (s)	Tcomm(s)	Time(s)	Cost(min*Node)
+data		2048.0	2.0	14516732160.0	2477.9456	3.1296388	2481.0752388	84.0
+data		4096.0	4.0	14516732160.0	1238.9728	2.35943566656	1241.33223567	84.0
+#######################################################
+-net ./ALEXNET_ImageNet_prof.net -plat ABCI.plat -goal 1 --paratype ['d']
+--cmaxB 262144.0 --cmaxp 4.0 --cBon 2048.0
+====================================
+Read platform from  ABCI.plat
+====================================
+Read dataset and DNN from  ./ALEXNET_ImageNet_prof.net
+==========DATA PARALLELISM==========
+maxSamplePerNode: 1132.35276269
+Use FIX_MIRCO_BATCH set by user,  2048.0
+2048.0 1711156 62367776 4.0
+2048.0 1711156 62367776 4.0
+==================SUMMARY==================
+name		B	p	Mem (bytes)	Tcomp (s)	Tcomm(s)	Time(s)	Cost(min*Node)
+data		4096.0	2.0	28534522112.0	2477.9456	1.56732311104	2479.51292311	84.0
+data		8192.0	4.0	28534522112.0	1238.9728	1.18348689984	1240.1562869	84.0
+ ############################ VGG #################################
+#######################################################
+-net ./VGG_ImageNet_prof.net -plat ABCI.plat -goal 1 --paratype ['d']
+--cmaxB 262144.0 --cmaxp 4.0 --cBon 8.0
+====================================
+Read platform from  ABCI.plat
+====================================
+Read dataset and DNN from  ./VGG_ImageNet_prof.net
+==========DATA PARALLELISM==========
+maxSamplePerNode: 58.5511784785
+Use FIX_MIRCO_BATCH set by user,  8.0
+8.0 31258100 169801408 4.0
+8.0 31258100 169801408 4.0
+==================SUMMARY==================
+name		B	p	Mem (bytes)	Tcomp (s)	Tcomm(s)	Time(s)	Cost(min*Node)
+data		16.0	2.0	3358929664.0	4875.328	1088.1690112	5963.4970112	200.0
+data		32.0	4.0	3358929664.0	2437.664	817.2067584	3254.8707584	220.0
+#######################################################
+-net ./VGG_ImageNet_prof.net -plat ABCI.plat -goal 1 --paratype ['d']
+--cmaxB 262144.0 --cmaxp 4.0 --cBon 16.0
+====================================
+Read platform from  ABCI.plat
+====================================
+Read dataset and DNN from  ./VGG_ImageNet_prof.net
+==========DATA PARALLELISM==========
+maxSamplePerNode: 58.5511784785
+Use FIX_MIRCO_BATCH set by user,  16.0
+16.0 31258100 169801408 4.0
+16.0 31258100 169801408 4.0
+==================SUMMARY==================
+name		B	p	Mem (bytes)	Tcomp (s)	Tcomm(s)	Time(s)	Cost(min*Node)
+data		32.0	2.0	5359448064.0	4875.328	544.0845056	5419.4125056	182.0
+data		64.0	4.0	5359448064.0	2437.664	408.6033792	2846.2673792	192.0
+#######################################################
+-net ./VGG_ImageNet_prof.net -plat ABCI.plat -goal 1 --paratype ['d']
+--cmaxB 262144.0 --cmaxp 4.0 --cBon 32.0
+====================================
+Read platform from  ABCI.plat
+====================================
+Read dataset and DNN from  ./VGG_ImageNet_prof.net
+==========DATA PARALLELISM==========
+maxSamplePerNode: 58.5511784785
+Use FIX_MIRCO_BATCH set by user,  32.0
+32.0 31258100 169801408 4.0
+32.0 31258100 169801408 4.0
+==================SUMMARY==================
+name		B	p	Mem (bytes)	Tcomp (s)	Tcomm(s)	Time(s)	Cost(min*Node)
+data		64.0	2.0	9360484864.0	4875.328	272.0422528	5147.3702528	172.0
+data		128.0	4.0	9360484864.0	2437.664	204.3016896	2641.9656896	180.0
+#######################################################
+-net ./VGG_ImageNet_prof.net -plat ABCI.plat -goal 1 --paratype ['d']
+--cmaxB 262144.0 --cmaxp 4.0 --cBon 64.0
+====================================
+Read platform from  ABCI.plat
+====================================
+Read dataset and DNN from  ./VGG_ImageNet_prof.net
+==========DATA PARALLELISM==========
+maxSamplePerNode: 58.5511784785
+Use FIX_MIRCO_BATCH set by user,  64.0
+64.0 31258100 169801408 4.0
+64.0 31258100 169801408 4.0
+==================SUMMARY==================
+name		B	p	Mem (bytes)	Tcomp (s)	Tcomm(s)	Time(s)	Cost(min*Node)
+data		128.0	2.0	17362558464.0	4875.328	136.0211264	5011.3491264	168.0
+data		256.0	4.0	17362558464.0	2437.664	102.1508448	2539.8148448	172.0
+#######################################################
+-net ./VGG_ImageNet_prof.net -plat ABCI.plat -goal 1 --paratype ['d']
+--cmaxB 262144.0 --cmaxp 4.0 --cBon 128.0
+====================================
+Read platform from  ABCI.plat
+====================================
+Read dataset and DNN from  ./VGG_ImageNet_prof.net
+==========DATA PARALLELISM==========
+maxSamplePerNode: 58.5511784785
+Use FIX_MIRCO_BATCH set by user,  128.0
+128.0 31258100 169801408 4.0
+128.0 31258100 169801408 4.0
+==================SUMMARY==================
+name		B	p	Mem (bytes)	Tcomp (s)	Tcomm(s)	Time(s)	Cost(min*Node)
+data		256.0	2.0	33366705664.0	4875.328	68.0105632	4943.3385632	166.0
+data		512.0	4.0	33366705664.0	2437.664	51.0754224	2488.7394224	168.0
+#######################################################
+-net ./VGG_ImageNet_prof.net -plat ABCI.plat -goal 1 --paratype ['d']
+--cmaxB 262144.0 --cmaxp 4.0 --cBon 256.0
+====================================
+Read platform from  ABCI.plat
+====================================
+Read dataset and DNN from  ./VGG_ImageNet_prof.net
+==========DATA PARALLELISM==========
+maxSamplePerNode: 58.5511784785
+Use FIX_MIRCO_BATCH set by user,  256.0
+256.0 31258100 169801408 4.0
+256.0 31258100 169801408 4.0
+==================SUMMARY==================
+name		B	p	Mem (bytes)	Tcomp (s)	Tcomm(s)	Time(s)	Cost(min*Node)
+data		512.0	2.0	65375000064.0	4875.328	34.0052816	4909.3332816	164.0
+data		1024.0	4.0	65375000064.0	2437.664	25.5377112	2463.2017112	168.0
+ ############################ RESNET #################################
+#######################################################
+-net ./RESNET50_ImageNet.net -plat ABCI.plat -goal 1 --paratype ['d']
+--cmaxB 262144.0 --cmaxp 4.0 --cBon 8.0
+====================================
+Read platform from  ABCI.plat
+====================================
+Read dataset and DNN from  ./RESNET50_ImageNet.net
+# First block group
+#
+#
+# Second block group
+#
+#
+#
+# Third block group
+#
+#
+#
+#
+#
+# Forth block group
+#
+#
+# Fully connected
+==========DATA PARALLELISM==========
+maxSamplePerNode: 66.3713327303
+Use FIX_MIRCO_BATCH set by user,  8.0
+8.0 29790964 22734016 4.0
+8.0 29790964 22734016 4.0
+==================SUMMARY==================
+name		B	p	Mem (bytes)	Tcomp (s)	Tcomm(s)	Time(s)	Cost(min*Node)
+data		16.0	2.0	2088493824.0	1211.45485259	146.9377024	1358.39255499	46.0
+data		32.0	4.0	2088493824.0	605.727426297	111.2832768	717.010703097	48.0
+#######################################################
+-net ./RESNET50_ImageNet.net -plat ABCI.plat -goal 1 --paratype ['d']
+--cmaxB 262144.0 --cmaxp 4.0 --cBon 16.0
+====================================
+Read platform from  ABCI.plat
+====================================
+Read dataset and DNN from  ./RESNET50_ImageNet.net
+# First block group
+#
+#
+# Second block group
+#
+#
+#
+# Third block group
+#
+#
+#
+#
+#
+# Forth block group
+#
+#
+# Fully connected
+==========DATA PARALLELISM==========
+maxSamplePerNode: 66.3713327303
+Use FIX_MIRCO_BATCH set by user,  16.0
+16.0 29790964 22734016 4.0
+16.0 29790964 22734016 4.0
+==================SUMMARY==================
+name		B	p	Mem (bytes)	Tcomp (s)	Tcomm(s)	Time(s)	Cost(min*Node)
+data		32.0	2.0	3995115520.0	1211.45485259	73.4688512	1284.92370379	44.0
+data		64.0	4.0	3995115520.0	605.727426297	55.6416384	661.369064697	48.0
+#######################################################
+-net ./RESNET50_ImageNet.net -plat ABCI.plat -goal 1 --paratype ['d']
+--cmaxB 262144.0 --cmaxp 4.0 --cBon 32.0
+====================================
+Read platform from  ABCI.plat
+====================================
+Read dataset and DNN from  ./RESNET50_ImageNet.net
+# First block group
+#
+#
+# Second block group
+#
+#
+#
+# Third block group
+#
+#
+#
+#
+#
+# Forth block group
+#
+#
+# Fully connected
+==========DATA PARALLELISM==========
+maxSamplePerNode: 66.3713327303
+Use FIX_MIRCO_BATCH set by user,  32.0
+32.0 29790964 22734016 4.0
+32.0 29790964 22734016 4.0
+==================SUMMARY==================
+name		B	p	Mem (bytes)	Tcomp (s)	Tcomm(s)	Time(s)	Cost(min*Node)
+data		64.0	2.0	7808358912.0	1211.45485259	36.7344256	1248.18927819	42.0
+data		128.0	4.0	7808358912.0	605.727426297	27.8208192	633.548245497	44.0
+#######################################################
+-net ./RESNET50_ImageNet.net -plat ABCI.plat -goal 1 --paratype ['d']
+--cmaxB 262144.0 --cmaxp 4.0 --cBon 64.0
+====================================
+Read platform from  ABCI.plat
+====================================
+Read dataset and DNN from  ./RESNET50_ImageNet.net
+# First block group
+#
+#
+# Second block group
+#
+#
+#
+# Third block group
+#
+#
+#
+#
+#
+# Forth block group
+#
+#
+# Fully connected
+==========DATA PARALLELISM==========
+maxSamplePerNode: 66.3713327303
+Use FIX_MIRCO_BATCH set by user,  64.0
+64.0 29790964 22734016 4.0
+64.0 29790964 22734016 4.0
+==================SUMMARY==================
+name		B	p	Mem (bytes)	Tcomp (s)	Tcomm(s)	Time(s)	Cost(min*Node)
+data		128.0	2.0	15434845696.0	1211.45485259	18.3672128	1229.82206539	42.0
+data		256.0	4.0	15434845696.0	605.727426297	13.9104096	619.637835897	44.0
+#######################################################
+-net ./RESNET50_ImageNet.net -plat ABCI.plat -goal 1 --paratype ['d']
+--cmaxB 262144.0 --cmaxp 4.0 --cBon 128.0
+====================================
+Read platform from  ABCI.plat
+====================================
+Read dataset and DNN from  ./RESNET50_ImageNet.net
+# First block group
+#
+#
+# Second block group
+#
+#
+#
+# Third block group
+#
+#
+#
+#
+#
+# Forth block group
+#
+#
+# Fully connected
+==========DATA PARALLELISM==========
+maxSamplePerNode: 66.3713327303
+Use FIX_MIRCO_BATCH set by user,  128.0
+128.0 29790964 22734016 4.0
+128.0 29790964 22734016 4.0
+==================SUMMARY==================
+name		B	p	Mem (bytes)	Tcomp (s)	Tcomm(s)	Time(s)	Cost(min*Node)
+data		256.0	2.0	30687819264.0	1211.45485259	9.1836064	1220.63845899	42.0
+data		512.0	4.0	30687819264.0	605.727426297	6.9552048	612.682631097	44.0
+#######################################################
+-net ./RESNET50_ImageNet.net -plat ABCI.plat -goal 1 --paratype ['d']
+--cmaxB 262144.0 --cmaxp 4.0 --cBon 256.0
+====================================
+Read platform from  ABCI.plat
+====================================
+Read dataset and DNN from  ./RESNET50_ImageNet.net
+# First block group
+#
+#
+# Second block group
+#
+#
+#
+# Third block group
+#
+#
+#
+#
+#
+# Forth block group
+#
+#
+# Fully connected
+==========DATA PARALLELISM==========
+maxSamplePerNode: 66.3713327303
+Use FIX_MIRCO_BATCH set by user,  256.0
+256.0 29790964 22734016 4.0
+256.0 29790964 22734016 4.0
+==================SUMMARY==================
+name		B	p	Mem (bytes)	Tcomp (s)	Tcomm(s)	Time(s)	Cost(min*Node)
+data		512.0	2.0	61193766400.0	1211.45485259	4.5918032	1216.04665579	42.0
+data		1024.0	4.0	61193766400.0	605.727426297	3.4776024	609.205028697	44.0
