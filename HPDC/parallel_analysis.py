@@ -133,6 +133,20 @@ def main(args):
 	print "#######################################################"	
 	print "-net", netFileName, "-plat",platFileName ,"-goal",g.GOAL, "--paratype", paraTypes
 	print "--cmaxB", g.MAX_MINIBATCH, "--cmaxp", g.MAX_RANK, "--cBon", g.FIX_MIRCO_BATCH	
+	
+	# ###This code to test the communication
+	# for i in range(1,9):
+		# nodeNumber = math.pow(2,i)
+		# bandwidth, latency = get_network_factor("ABCI",nodeNumber,ALGORITHM_RING)
+		# alpha = latency
+		# beta = 1/float(bandwidth)
+		# for j in range(1,8):
+			# messageSize = math.pow(2,j) * 1E6
+			# Tcomm = 2*(nodeNumber-1)*(alpha + messageSize*beta/nodeNumber)
+			# print nodeNumber,"\t",messageSize,"\t", Tcomm
+		
+		
+	# return
 	#2. Load Platform, Dataset and DNN
 	platform = load_platform(platFileName)
 	g.MAX_RANK = min(g.MAX_RANK,platform['max_node'])
