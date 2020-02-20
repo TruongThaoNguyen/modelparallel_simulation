@@ -496,7 +496,7 @@ def analysis_spatial(network, platform, g, metaData, results):
 		minW = min(minW,layer['y'][1])
 	max_rank = min(g.MAX_RANK,minW)	
 	print "max_rank", max_rank
-	
+	max_rank = g.MAX_RANK
 	maxIdx = int(math.log(max_rank,2))
 	for i in range(1,maxIdx+1):
 		nodeNumber = math.pow(2,i)
@@ -504,11 +504,13 @@ def analysis_spatial(network, platform, g, metaData, results):
 		totalOut = 0
 		totalComp = 0
 		for i in range(0,splitLayerIdx + 1):
+			layer = network['lays'][i]
 			totalOut = totalOut + math.ceil(float(layer['out']) / nodeNumber)	#only divide by p for some begining layer
 			totalIn = totalIn + math.ceil(float(layer['in']) / nodeNumber)		
-			totalComp = totalComp + float(layer['comp']) / nodeNumber
-		
+			totalComp = totalComp + float(layer['comp'])
+			totalComp = totalComp / nodeNumber
 		for i in range(splitLayerIdx+1,len(network['lays'])):
+			layer = network['lays'][i]
 			totalOut = totalOut + layer['out']
 			totalIn = totalIn + layer['in']
 			totalComp = totalComp + layer['comp']
@@ -764,15 +766,17 @@ def analysis_hybrid_ds(network, platform, g, metaData, results):
 	totalOut = 0
 	totalComp = 0
 	for i in range(0,splitLayerIdx + 1):
+		layer = network['lays'][i]
 		totalOut = totalOut + math.ceil(float(layer['out']) / P2) #only divide by p2 for some begining layer
 		totalIn = totalIn + math.ceil(float(layer['in']) / P2)
 		totalComp = totalComp + float(layer['comp']) / P2
-	
+	print "totalComp of 1block",totalComp, P2
 	for i in range(splitLayerIdx+1,len(network['lays'])):
+		layer = network['lays'][i]
 		totalOut = totalOut + layer['out']
 		totalIn = totalIn + layer['in']
 		totalComp = totalComp + layer['comp']
-
+	print "totalComp of 1block",totalComp
 	maxSamplePerNode = float(g.ITEM_PER_NODE/2 - totalWeight)/(totalIn + totalOut)
 	if maxSamplePerNode < 1:
 		print "Not enough memory to store model and 1 sample when split into", nodeNumber, "at layer",splitLayerIdx
