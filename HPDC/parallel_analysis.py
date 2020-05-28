@@ -484,7 +484,7 @@ def analysis_spatial(network, platform, g, metaData, results):
 	if "VGG16" in network['name']:
 		splitLayerIdx = 30
 	if "ResNet50" in network['name']:
-		splitLayerIdx = 164
+		splitLayerIdx = 163
 	if "CosmoFlow" in network['name']:
 		splitLayerIdx = 5		
 	
@@ -496,7 +496,7 @@ def analysis_spatial(network, platform, g, metaData, results):
 		minW = min(minW,layer['y'][1])
 	max_rank = min(g.MAX_RANK,minW)	
 	print "max_rank", max_rank
-	max_rank = g.MAX_RANK
+	#max_rank = g.MAX_RANK
 	maxIdx = int(math.log(max_rank,2))
 	for i in range(1,maxIdx+1):
 		nodeNumber = math.pow(2,i)
@@ -508,7 +508,8 @@ def analysis_spatial(network, platform, g, metaData, results):
 			totalOut = totalOut + math.ceil(float(layer['out']) / nodeNumber)	#only divide by p for some begining layer
 			totalIn = totalIn + math.ceil(float(layer['in']) / nodeNumber)		
 			totalComp = totalComp + float(layer['comp'])
-			totalComp = totalComp / nodeNumber
+		totalComp = totalComp / nodeNumber ## Note on 09 Mar: BUG in Spatial that submit to HPDC --> wrong computing Time of spatial...
+		print totalComp
 		for i in range(splitLayerIdx+1,len(network['lays'])):
 			layer = network['lays'][i]
 			totalOut = totalOut + layer['out']
@@ -535,6 +536,7 @@ def analysis_spatial(network, platform, g, metaData, results):
 				bandwidth, latency = get_network_factor(platform,nodeNumber,ALGORITHM_RING)
 				alpha = latency
 				beta = 1/float(bandwidth)
+				
 				#Communication the halo exchange. Only apply for CONV and POOLING (which has kernel size > 1)
 				# A GPU only need to communicate with its preceding and next GPUs along the ring except the first GPU and the last GPU (near the border of sample). Communication will be performed in 2 round in 2 directions clockwise and counter-clockwise along the ring so that no network conflict appear!!! 
 				# Secondly, we group the communication of B sample at the same time to reduce the latency. 
@@ -546,21 +548,29 @@ def analysis_spatial(network, platform, g, metaData, results):
 					if (kernelSize > 1):
 						# Halo exchange the activation: halo(y)
 						haloSize = network['lays'][i]['y'][1] * ((kernelSize -1)/2) * g.BYTE_PER_ITEM
+						#haloSize1 = haloSize
 						Thalo = 2*(alpha + haloSize*beta)
 						
 						# Halo exchange the input gradient: halo(dL/dx)
 						haloSize = network['lays'][i]['x'][1] * ((kernelSize -1)/2) * g.BYTE_PER_ITEM
 						Thalo = Thalo  + 2*(alpha + haloSize*beta)
-					Tcomm = Tcomm + Thalo
+						#print (i+1), (haloSize1 + haloSize) / g.BYTE_PER_ITEM
+						
+						Tcomm = Tcomm + Thalo ## Note on 09 Mar: BUG in Spatial that submit to HPDC --> wrong halo Time of spatial...
+				#Tcheck = Tcomm
+				#print "tHalo", Tcheck * math.ceil(g.TOTAL_SAMPLE/miniBatch)
 				#Algather communication |y| at the begining of the 2nd partition (in the forward pass)
 				#Scatter communication the input gradient  ==> factor of 2
 				totalOutatSplit = float(network['lays'][splitLayerIdx]['out'])
 				Tcomm = Tcomm + 2*(nodeNumber-1)*(alpha + (miniBatch*totalOutatSplit*g.BYTE_PER_ITEM*beta)/nodeNumber)
 				Tcomm = Tcomm * math.ceil(g.TOTAL_SAMPLE/miniBatch)
-				
+				#print "tGather", Tcomm - Tcheck * math.ceil(g.TOTAL_SAMPLE/miniBatch)
+				Tcheck = Tcomm
 				#Communication the weight at the end of each iteration
 				Tcomm = Tcomm  + 2*(g.TOTAL_SAMPLE/miniBatch)*(nodeNumber-1)*(alpha + totalWeight*g.BYTE_PER_ITEM*beta/nodeNumber)
+				#print "tReduce", Tcomm - Tcheck
 				result = {'name':'spatial','B':miniBatch,'p':nodeNumber,'mMem':memPerNode,'Tcomp':Tcomp,'Tcomm':Tcomm}
+
 				results.append(result)
 
 def analysis_pipeline(network, platform, g, metaData, results):
@@ -723,15 +733,17 @@ def analysis_hybrid_df(network, platform, g, metaData, results):
 			bandwidth1, latency1 = get_network_factor(platform,P2,ALGORITHM_RING)
 			alpha = latency1
 			beta = 1/float(bandwidth1)
-			Tcomm = 3*math.ceil(g.TOTAL_SAMPLE/miniBatch)*(P2-1)*(alpha*(G-1) + (miniBatch*totalOutExceptLast*g.BYTE_PER_ITEM*beta)/nodeNumber)
 			
+			Tcomm = 3*math.ceil(g.TOTAL_SAMPLE/miniBatch)*(P2-1)*(alpha*(G-1) + (miniBatch*totalOutExceptLast*g.BYTE_PER_ITEM*beta)/nodeNumber)
+			#print "Inside",Tcomm
 			#Communication between nodes (4 flows at the same time may reduce the bandwidth 4 times)
 			bandwidth2, latency2 = get_network_factor(platform,nodeNumber,ALGORITHM_RING)
 			alpha = latency2
 			bandwidth2 = bandwidth2 /GPU_PER_NODE
 			beta = 1/float(bandwidth2)
-			Tcomm = Tcomm + 2*math.ceil(g.TOTAL_SAMPLE/miniBatch)*(P1-1)*(alpha + totalWeight*g.BYTE_PER_ITEM*beta/nodeNumber)
-
+			Tcomm1 =  2*math.ceil(g.TOTAL_SAMPLE/miniBatch)*(P1-1)*(alpha + totalWeight*g.BYTE_PER_ITEM*beta/nodeNumber)
+			Tcomm = Tcomm + Tcomm1
+			#print Tcomm1
 			result = {'name':'df','B':miniBatch,'p':nodeNumber,'mMem':memPerNode,'Tcomp':Tcomp,'Tcomm':Tcomm}
 			results.append(result)
 
@@ -749,7 +761,7 @@ def analysis_hybrid_ds(network, platform, g, metaData, results):
 	if "VGG16" in network['name']:
 		splitLayerIdx = 30
 	if "ResNet50" in network['name']:
-		splitLayerIdx = 164
+		splitLayerIdx = 163
 	if "CosmoFlow" in network['name']:
 		splitLayerIdx = 5		
 	P2 = g.GPU_PER_NODE 
@@ -819,15 +831,18 @@ def analysis_hybrid_ds(network, platform, g, metaData, results):
 					# Halo exchange the input gradient: halo(dL/dx)
 					haloSize = network['lays'][i]['x'][1] * ((kernelSize -1)/2) * g.BYTE_PER_ITEM
 					Thalo = Thalo  + 2*(alpha + haloSize*beta)
-				Tcomm = Tcomm + Thalo
+					Tcomm = Tcomm + Thalo ## Note on 09 Mar: BUG in Spatial that submit to HPDC --> wrong halo Time of spatial...
+			#print "Intra-Halo", Tcomm* math.ceil(g.TOTAL_SAMPLE/miniBatch)
 			#Algather communication |y| at the begining of the 2nd partition (in the forward pass)
 			#Scatter communication the input gradient  ==> factor of 2
 			totalOutatSplit = float(network['lays'][splitLayerIdx]['out'])
 			Tcomm = Tcomm + 2*(P2-1)*(alpha + (maxSamplePerNode*totalOutatSplit*g.BYTE_PER_ITEM*beta)/P2)
-
+			#print "Intra", Tcomm* math.ceil(g.TOTAL_SAMPLE/miniBatch)
 			#Communication the weight at the end of each iteration
 			#Perform the reduction inside node first
 			Tcomm = Tcomm  + 2*(P2-1)*(alpha + totalWeight*g.BYTE_PER_ITEM*beta/P2)
+			#print "Intra", Tcomm* math.ceil(g.TOTAL_SAMPLE/miniBatch)
+			
 			#Perform the reducetion between node 
 			#(4 flows at the same time may reduce the bandwidth 4 times)
 			bandwidth2, latency2 = get_network_factor(platform,nodeNumber,ALGORITHM_RING)
